@@ -29,6 +29,7 @@ In the directory app you will find:
 #OTHER
 If there are any problems you can open a github issue or you can first check some online forums to 
 be sure is not project related issue.
+You can find a small mockup image in the same folder of readme.md, it shows how the project should work.
 
 **Thank you for cloning or simply using it**
 
