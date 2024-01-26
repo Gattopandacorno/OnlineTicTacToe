@@ -111,7 +111,8 @@ public class GameLogic extends AppCompatActivity
         });
     }
 
-    /* Control if there is a winner in the game, this is done with the winning combination matrix
+    /**
+     * Control if there is a winner in the game, this is done with the winning combination matrix
      * If in the grid there is a winning combination it returns the value of the winner; 1 = x, 2 = o
      * Otherwise it returns 0
      */
@@ -124,7 +125,8 @@ public class GameLogic extends AppCompatActivity
         return 0;
     } //TODO: Add win count here?
 
-    /* The reset function is not only used when reset button is clicked
+    /**
+     * The reset function is not only used when reset button is clicked
      * but also when the play again 'button' is shown  after a win in the alert dialog
      */
     @SuppressLint("UseCompatLoadingForDrawables")

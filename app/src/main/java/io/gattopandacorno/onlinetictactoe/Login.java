@@ -8,6 +8,10 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.EditText;
 
+import com.google.firebase.database.DataSnapshot;
+
+import java.util.Objects;
+
 
 public class Login extends AppCompatActivity
 {
@@ -78,7 +82,7 @@ public class Login extends AppCompatActivity
         }
 
 
-        //This take to the MainActivity if the back button is pressed
+        /* This take to the MainActivity if the back button is pressed */
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed()
@@ -90,5 +94,6 @@ public class Login extends AppCompatActivity
         });
 
     }
+
 
 }
