@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/name"
+        android:textSize="@android:dimen/app_icon_size"
+        app:layout_constraintBottom_toTopOf="@+id/player"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.491"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText
+        android:id="@+id/player"
+        android:layout_width="match_parent"
+        android:layout_height="@android:dimen/app_icon_size"
+
+        android:autofillHints="true"
+        android:background="@color/white"
+        android:hint="Enter name..."
+        android:inputType="text"
+        android:textColor="@color/black"
+        android:textColorHint="@color/gray"
+        android:layout_marginLeft="@android:dimen/app_icon_size"
+        android:layout_marginRight="@android:dimen/app_icon_size"
+        app:layout_constraintBottom_toTopOf="@+id/text2"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="HardcodedText,LabelFor">
+
+    </EditText>
+
+    <TextView
+        android:id="@+id/text2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Type game code"
+        android:textSize="@android:dimen/app_icon_size"
+        app:layout_constraintBottom_toTopOf="@+id/linearLayout3"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.491"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="HardcodedText" />
+
+    <EditText
+        android:id="@+id/code"
+        android:layout_width="match_parent"
+        android:layout_height="@android:dimen/app_icon_size"
+        android:autofillHints="true"
+        android:background="@color/white"
+        android:hint="Enter code...."
+        android:inputType="text"
+        android:textColor="@color/black"
+        android:textColorHint="@color/gray"
+        android:layout_marginRight="@android:dimen/app_icon_size"
+        android:layout_marginLeft="@android:dimen/app_icon_size"
+        app:layout_constraintBottom_toTopOf="@+id/linearLayout3"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/player"
+        tools:ignore="HardcodedText,LabelFor" />
+
+    <LinearLayout
+        android:id="@+id/linearLayout3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="@android:dimen/app_icon_size"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <Button
+            android:id="@+id/join"
+            android:layout_width="@android:dimen/thumbnail_width"
+            android:layout_height="@android:dimen/app_icon_size"
+            android:layout_marginEnd="@dimen/cardview_default_radius"
+            android:layout_weight="1"
+            android:text="Join Match"
+            tools:ignore="ButtonStyle,HardcodedText" />
+
+        <Button
+            android:id="@+id/host"
+            android:layout_width="@android:dimen/thumbnail_width"
+            android:layout_height="@android:dimen/app_icon_size"
+            android:layout_marginEnd="@dimen/cardview_default_radius"
+            android:layout_weight="1"
+            android:text="Host Match"
+            tools:ignore="ButtonStyle,HardcodedText" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "512679912971",
+    "project_id": "onlinetictactoe-4e7b9",
+    "storage_bucket": "onlinetictactoe-4e7b9.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:512679912971:android:c251310efebb279db8090e",
+        "android_client_info": {
+          "package_name": "io.gattopandacorno.onlinetictactoe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTrfA0QhuSoosf1bMrlCWkEBs4JoCHMlI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
