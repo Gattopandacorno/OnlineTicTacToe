@@ -14,7 +14,7 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //Setting click listener for when Play local game button is clicked
+        // Set click listener for when Play local game button is touched
         findViewById(R.id.localButton).setOnClickListener(v->{
             Intent i = new Intent(this, Login.class);
 
@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity
             finish();
         });
 
-        //Setting click listener for when Play multiplayer game button is clicked
+        // Set click listener for when Play multiplayer game button is touched
         findViewById(R.id.multiButton).setOnClickListener(v -> {
             Intent i = new Intent(this, Login.class);
 

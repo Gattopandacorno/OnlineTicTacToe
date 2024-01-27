@@ -36,7 +36,7 @@ public class GameLogic extends AppCompatActivity
                             findViewById(R.id.i3), findViewById(R.id.i4), findViewById(R.id.i5),
                             findViewById(R.id.i6), findViewById(R.id.i7), findViewById(R.id.i8)};
 
-        //If the game mode is local
+        // If the game mode is local
         if(!getIntent().getBooleanExtra("online", false))
         {
             TextView tp1 = findViewById(R.id.tp1), tp2 = findViewById(R.id.tp2);
@@ -50,7 +50,7 @@ public class GameLogic extends AppCompatActivity
             {
                 int j = i;
                 cells[i].setOnTouchListener((v, event) -> {
-                    //Only if the image/cell is touched AND it is not occupied
+                    // Only if the image/cell is touched AND it is not occupied
                     if(event.getAction() == MotionEvent.ACTION_DOWN && grid[j]==0)
                     {
                         if(turn)
@@ -81,7 +81,7 @@ public class GameLogic extends AppCompatActivity
             }
         }
 
-        //If the game mode is online
+        // If the game mode is online
         else
         {
             Toast.makeText(this, "online game", Toast.LENGTH_SHORT).show();
@@ -99,7 +99,7 @@ public class GameLogic extends AppCompatActivity
             finish();
         });
 
-        //This take to the MainActivity if the back button is pressed
+        // This take to the MainActivity if the back button is pressed
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed()
