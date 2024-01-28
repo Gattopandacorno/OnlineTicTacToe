@@ -73,19 +73,27 @@ public class Login extends AppCompatActivity
                 if(!t.getText().toString().isEmpty()) i.putExtra("playerName1", t.getText().toString());
                 else i.putExtra("playerName1", "PLAYER1");
 
-                // Control if the code for the
-                if(!c.isEmpty())
-                {
-                    Toast.makeText(this, "not existing code!", Toast.LENGTH_SHORT).show();
+                db.child("codes").addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot)
+                    {
+                        new Handler().postDelayed(() -> {
+                            if(!c.isEmpty() && !IsValueAvailable(snapshot, c))
+                                db.child("codes").push().setValue(c);
+                            else
+                                Toast.makeText(Login.this, "Enter a valid code", Toast.LENGTH_SHORT).show();
+                            },2000);
+                        }
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {}
+                });
 
-                    i.putExtra("host", true);
-                    i.putExtra("online", true);
-                    startActivity(i);
-                    finish();
-                }
+                i.putExtra("host", true);
+                i.putExtra("online", true);
+                startActivity(i);
+                finish();
 
-                else
-                    Toast.makeText(this,"Enter valid code", Toast.LENGTH_SHORT).show();
+
 
             });
 
@@ -98,19 +106,28 @@ public class Login extends AppCompatActivity
                 if(!t.getText().toString().isEmpty()) i.putExtra("playerName2", t.getText().toString());
                 else i.putExtra("playerName2", "PLAYER2");
 
-                if(!c.isEmpty())
-                {
-                    i.putExtra("playerName1",db.child("codes").child("players").get().toString());
-                    db.child("codes").child("players").push().setValue(t.getText().toString());
+                db.child("codes").addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot)
+                    {
+                        new Handler().postDelayed(() -> {
+                            if(!c.isEmpty() && IsValueAvailable(snapshot, c))
+                            {
+                                i.putExtra("playerName1",db.child("codes").child("players").get().toString());
+                                i.putExtra("host", false);
+                                i.putExtra("online", true);
+                                startActivity(i);
+                                finish();
+                            }
+                            else
+                                Toast.makeText(Login.this, "Enter a valid code", Toast.LENGTH_SHORT).show();
+                            }, 2000);
 
-                    i.putExtra("host", false);
-                    i.putExtra("online", true);
-                    startActivity(i);
-                    finish();
-                }
+                    }
 
-                else
-                    Toast.makeText(this, "Enter a valid code", Toast.LENGTH_SHORT).show();
+                     @Override
+                     public void onCancelled(@NonNull DatabaseError error) {}
+                });
 
             }); //TODO: set name for player 2 when enters the room
         }
@@ -133,7 +150,7 @@ public class Login extends AppCompatActivity
      * Used to control if the code given by the joining player is available online
      * It searches in all the 'entry' of the snapshot for a value equal to the given code
      */
-    private boolean isAvailable(DataSnapshot snap, String code)
+    private boolean IsValueAvailable(DataSnapshot snap, String code)
     {
         for (DataSnapshot s : snap.getChildren())
             if(Objects.requireNonNull(s.getValue()).toString().equals(code)) return true;
