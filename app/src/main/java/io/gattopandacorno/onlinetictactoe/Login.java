@@ -22,6 +22,7 @@ import java.util.Objects;
 
 public class Login extends AppCompatActivity
 {
+
     @SuppressLint({"SetTextI18n", "NewApi"})
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -68,28 +69,29 @@ public class Login extends AppCompatActivity
                 if(!t.getText().toString().isEmpty()) i.putExtra("playerName1", t.getText().toString());
                 else i.putExtra("playerName1", "PLAYER1");
 
-                db.child("codes").addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot)
-                    {
-                        new Handler().postDelayed(() -> {
-                            if(!c.isEmpty() && !IsValueAvailable(snapshot, c))
-                                db.child("codes").push().setValue(c);
-                            else
-                                Toast.makeText(Login.this, "Enter a valid code", Toast.LENGTH_SHORT).show();
-                            },2000);
+                if(!c.isEmpty())
+                {
+                    db.child("codes").addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot)
+                        {
+                            new Handler().postDelayed(() -> {
+                                if (!IsValueAvailable(snapshot, c))
+                                {
+                                    db.child("codes").push().setValue(c);
+                                    i.putExtra("host", true);
+                                    i.putExtra("online", true);
+                                    startActivity(i);
+                                    finish();
+                                }}, 2000);
                         }
+
                         @Override
                         public void onCancelled(@NonNull DatabaseError error) {}
-                });
-
-                i.putExtra("host", true);
-                i.putExtra("online", true);
-                startActivity(i);
-                finish();
-
-
-
+                    });
+                }
+                else
+                    Toast.makeText(this, "Enter a valid code", Toast.LENGTH_SHORT).show();
             });
 
             // Set click listener for when Join button is touched
@@ -101,28 +103,28 @@ public class Login extends AppCompatActivity
                 if(!t.getText().toString().isEmpty()) i.putExtra("playerName2", t.getText().toString());
                 else i.putExtra("playerName2", "PLAYER2");
 
-                db.child("codes").addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot)
-                    {
-                        new Handler().postDelayed(() -> {
-                            if(!c.isEmpty() && IsValueAvailable(snapshot, c))
-                            {
-                                i.putExtra("playerName1",db.child("codes").child("players").get().toString());
-                                i.putExtra("host", false);
-                                i.putExtra("online", true);
-                                startActivity(i);
-                                finish();
-                            }
-                            else
-                                Toast.makeText(Login.this, "Enter a valid code", Toast.LENGTH_SHORT).show();
-                            }, 2000);
+                if(!c.isEmpty())
+                {
+                    db.child("codes").addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            new Handler().postDelayed(() -> {
+                                if (IsValueAvailable(snapshot, c)) {
+                                    i.putExtra("playerName1", db.child("codes").child("players").get().toString());
+                                    i.putExtra("host", false);
+                                    i.putExtra("online", true);
+                                    startActivity(i);
+                                    finish();
+                                }}, 2000);
+                        }
 
-                    }
-
-                     @Override
-                     public void onCancelled(@NonNull DatabaseError error) {}
-                });
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                        }
+                    });
+                }
+                else
+                    Toast.makeText(this, "Enter a valid code", Toast.LENGTH_SHORT).show();
 
             }); //TODO: set name for player 2 when enters the room
         }
