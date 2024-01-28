@@ -8,6 +8,7 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.TextUtils;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -60,52 +61,58 @@ public class Login extends AppCompatActivity
         {
             setContentView(R.layout.formonline);
             EditText t = findViewById(R.id.player), code = findViewById(R.id.code);
-            String c = code.getText().toString();
-            DatabaseReference db = FirebaseDatabase.getInstance().getReferenceFromUrl(url);
 
-            // Set click listener for when Join button is touched
-            findViewById(R.id.join).setOnClickListener(v -> {
-
-                if(!t.getText().toString().isEmpty()) i.putExtra("playerName2", t.getText().toString());
-                else i.putExtra("playerName2", "PLAYER2");
-
-                if(!c.isEmpty() && db.child("codes").get()!=null)
-                    db.child("codes").child("players").push().setValue(t.getText().toString());
-                else
-                    Toast.makeText(this, "Enter a valid code", Toast.LENGTH_SHORT).show();
-
-                //TODO: set name for player 1
-
-                i.putExtra("host", false);
-                i.putExtra("online", true);
-
-                startActivity(i);
-                finish();
-            });
+            DatabaseReference db = FirebaseDatabase.getInstance().getReference();
 
             // Set click listener for when Create/Host button is touched
             findViewById(R.id.host).setOnClickListener(v ->{
+
+                String c = code.getText().toString();
 
                 // Set value for the player who hosts the game; if not given the default is "PLAYER1"
                 if(!t.getText().toString().isEmpty()) i.putExtra("playerName1", t.getText().toString());
                 else i.putExtra("playerName1", "PLAYER1");
 
                 // Control if the code for the
-                if(!c.isEmpty() && db.child("codes").get() == null)
+                if(!c.isEmpty())
                 {
-                    db.child("codes").setValue(c);
-                    db.child("codes").child("players").setValue(t.getText().toString());
+                    Toast.makeText(this, "not existing code!", Toast.LENGTH_SHORT).show();
+
+                    i.putExtra("host", true);
+                    i.putExtra("online", true);
+                    startActivity(i);
+                    finish();
                 }
-                    //TODO: set name for player 2 when enters the room
+
+                else
+                    Toast.makeText(this,"Enter valid code", Toast.LENGTH_SHORT).show();
+
+            });
+
+            // Set click listener for when Join button is touched
+            findViewById(R.id.join).setOnClickListener(v -> {
+
+                String c = code.getText().toString();
+
+                // Set value for the player who joins the game; if not given the default is "PLAYER2"
+                if(!t.getText().toString().isEmpty()) i.putExtra("playerName2", t.getText().toString());
+                else i.putExtra("playerName2", "PLAYER2");
+
+                if(!c.isEmpty())
+                {
+                    i.putExtra("playerName1",db.child("codes").child("players").get().toString());
+                    db.child("codes").child("players").push().setValue(t.getText().toString());
+
+                    i.putExtra("host", false);
+                    i.putExtra("online", true);
+                    startActivity(i);
+                    finish();
+                }
+
                 else
                     Toast.makeText(this, "Enter a valid code", Toast.LENGTH_SHORT).show();
 
-
-                i.putExtra("host", true);
-                i.putExtra("online", true);
-                startActivity(i);
-                finish();
-            });
+            }); //TODO: set name for player 2 when enters the room
         }
 
 
