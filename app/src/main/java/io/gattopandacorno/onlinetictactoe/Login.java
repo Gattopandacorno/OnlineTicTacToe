@@ -8,7 +8,6 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
-import android.text.TextUtils;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -23,10 +22,6 @@ import java.util.Objects;
 
 public class Login extends AppCompatActivity
 {
-
-    private final String url= "https://onlinetictactoe-4e7b9-default-rtdb.europe-west1.firebasedatabase.app/";
-
-
     @SuppressLint({"SetTextI18n", "NewApi"})
     @Override
     protected void onCreate(Bundle savedInstanceState)
