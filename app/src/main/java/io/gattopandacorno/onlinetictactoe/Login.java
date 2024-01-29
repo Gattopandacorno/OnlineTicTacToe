@@ -16,9 +16,6 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
-import java.util.Arrays;
-import java.util.Objects;
-
 
 public class Login extends AppCompatActivity
 {
@@ -65,18 +62,17 @@ public class Login extends AppCompatActivity
 
                 String c = code.getText().toString();
 
-                // Set value for the player who hosts the game; if not given the default is "PLAYER1"
-                if(!t.getText().toString().isEmpty()) i.putExtra("playerName1", t.getText().toString());
-                else i.putExtra("playerName1", "PLAYER1");
-
-                db.child("codes").addValueEventListener(new ValueEventListener() {
+                db.child("codes").child(c).addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot)
                     {
-                        if (!IsValueAvailable(snapshot, c))
+                        if (!c.isEmpty() && !snapshot.exists())
                         {
-                            db.child("codes").child(c).child("players")
-                                    .setValue(Arrays.asList(i.getStringExtra("playerName1"), "p2"));
+                            // Set value for the player who hosts the game; if not given the default is "PLAYER1"
+                            if(!t.getText().toString().isEmpty()) i.putExtra("playerName1", t.getText().toString());
+                            else i.putExtra("playerName1", "PLAYER1");
+
+                            db.child("codes").child(c).child("players").child("0").setValue(i.getStringExtra("playerName1"));
                             i.putExtra("host", true);
                             i.putExtra("online", true);
                             startActivity(i);
@@ -97,16 +93,16 @@ public class Login extends AppCompatActivity
 
                 String c = code.getText().toString();
 
-                // Set value for the player who joins the game; if not given the default is "PLAYER2"
-                if(!t.getText().toString().isEmpty()) i.putExtra("playerName2", t.getText().toString());
-                else i.putExtra("playerName2", "PLAYER2");
-
-                db.child("codes").addValueEventListener(new ValueEventListener() {
+                db.child("codes").child(c).addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot)
                     {
-                        if (!c.isEmpty() && IsValueAvailable(snapshot, c))
+                        if (!c.isEmpty() && snapshot.exists() && snapshot.getChildrenCount() == 2)
                         {
+                            // Set value for the player who joins the game; if not given the default is "PLAYER2"
+                            if(!t.getText().toString().isEmpty()) i.putExtra("playerName2", t.getText().toString());
+                            else i.putExtra("playerName2", "PLAYER2");
+
                             db.child("codes").child(c).child("players").child("1").setValue(i.getStringExtra("playerName2"));
                             i.putExtra("host", false);
                             i.putExtra("online", true);
@@ -135,17 +131,5 @@ public class Login extends AppCompatActivity
                 finish();
             }
         });
-
-    }
-
-    /**
-     * Used to control if the code given by the joining player is available online
-     * It searches in all the 'entry' of the snapshot for a value equal to the given code
-     */
-    private boolean IsValueAvailable(DataSnapshot snap, String code)
-    {
-        for (DataSnapshot s : snap.getChildren())
-            if(Objects.requireNonNull(s.getKey()).matches(code)) return true;
-        return false;
     }
 }
