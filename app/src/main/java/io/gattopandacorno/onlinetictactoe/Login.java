@@ -7,12 +7,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnFailureListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -62,7 +59,6 @@ public class Login extends AppCompatActivity
             EditText t = findViewById(R.id.player), code = findViewById(R.id.code);
 
             DatabaseReference db = FirebaseDatabase.getInstance().getReference();
-            DatabaseReference ref = db.child("codes");
 
             // Set click listener for when Create/Host button is touched
             findViewById(R.id.host).setOnClickListener(v ->{
@@ -73,29 +69,27 @@ public class Login extends AppCompatActivity
                 if(!t.getText().toString().isEmpty()) i.putExtra("playerName1", t.getText().toString());
                 else i.putExtra("playerName1", "PLAYER1");
 
-                if(!c.isEmpty())
-                {
-                    ref.addValueEventListener(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot snapshot)
+                db.child("codes").addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot)
+                    {
+                        if (!IsValueAvailable(snapshot, c))
                         {
-                            if (!IsValueAvailable(snapshot, c))
-                            {
-                                ref.child(c).child("players").setValue(Arrays.asList("p1", "p2"));
-                                i.putExtra("host", true);
-                                i.putExtra("online", true);
-                                startActivity(i);
-                                finish();
-                            }
+                            db.child("codes").child(c).child("players")
+                                    .setValue(Arrays.asList(i.getStringExtra("playerName1"), "p2"));
+                            i.putExtra("host", true);
+                            i.putExtra("online", true);
+                            startActivity(i);
+                            finish();
                         }
 
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError error) {}
-                    });
+                        else
+                            Toast.makeText(Login.this, "Maybe you want to join...", Toast.LENGTH_SHORT).show();
+                    }
 
-                }
-                else
-                    Toast.makeText(this, "Enter a valid code", Toast.LENGTH_SHORT).show();
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {}
+                });
             });
 
             // Set click listener for when Join button is touched
@@ -107,31 +101,27 @@ public class Login extends AppCompatActivity
                 if(!t.getText().toString().isEmpty()) i.putExtra("playerName2", t.getText().toString());
                 else i.putExtra("playerName2", "PLAYER2");
 
-                if(!c.isEmpty())
-                {
-                    ref.addValueEventListener(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot snapshot)
+                db.child("codes").addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot)
+                    {
+                        if (!c.isEmpty() && IsValueAvailable(snapshot, c))
                         {
-                            new Handler().postDelayed(() -> {
-                                if (IsValueAvailable(snapshot, c)) {
-                                    //i.putExtra("playerName1", db.child("codes").child("players").get().toString());
-                                    i.putExtra("host", false);
-                                    i.putExtra("online", true);
-                                    startActivity(i);
-                                    finish();
-                                }}, 2000);
+                            db.child("codes").child(c).child("players").child("1").setValue(i.getStringExtra("playerName2"));
+                            i.putExtra("host", false);
+                            i.putExtra("online", true);
+                            startActivity(i);
+                            finish();
                         }
 
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError error) {
-                        }
-                    });
-                }
-                else
-                    Toast.makeText(this, "Enter a valid code", Toast.LENGTH_SHORT).show();
+                        else
+                            Toast.makeText(Login.this, "Enter a valid code", Toast.LENGTH_SHORT).show();
 
-            }); //TODO: set name for player 2 when enters the room
+                    }
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {}
+                });
+            });
         }
 
 
@@ -155,7 +145,7 @@ public class Login extends AppCompatActivity
     private boolean IsValueAvailable(DataSnapshot snap, String code)
     {
         for (DataSnapshot s : snap.getChildren())
-            if(Objects.requireNonNull(s.getValue()).toString().equals(code)) return true;
+            if(Objects.requireNonNull(s.getKey()).matches(code)) return true;
         return false;
     }
 }
