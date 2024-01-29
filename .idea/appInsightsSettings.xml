@@ -10,13 +10,13 @@
               <option name="connection">
                 <ConnectionSetting>
                   <option name="appId" value="io.gattopandacorno.onlinetictactoe" />
-                  <option name="mobileSdkAppId" value="1:512679912971:android:c251310efebb279db8090e" />
-                  <option name="projectId" value="onlinetictactoe-4e7b9" />
-                  <option name="projectNumber" value="512679912971" />
+                  <option name="mobileSdkAppId" value="1:898982711365:android:73f11fc8219db74fc4932c" />
+                  <option name="projectId" value="trisonline-e643b" />
+                  <option name="projectNumber" value="898982711365" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
-              <option name="timeIntervalDays" value="ONE_DAY" />
+              <option name="timeIntervalDays" value="THIRTY_DAYS" />
               <option name="visibilityType" value="ALL" />
             </InsightsFilterSettings>
           </value>
