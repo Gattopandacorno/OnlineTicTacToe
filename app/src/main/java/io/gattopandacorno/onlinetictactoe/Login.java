@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -54,7 +55,6 @@ public class Login extends AppCompatActivity
         {
             setContentView(R.layout.formonline);
             EditText t = findViewById(R.id.player), code = findViewById(R.id.code);
-
             DatabaseReference db = FirebaseDatabase.getInstance().getReference();
 
             // Set click listener for when Create/Host button is touched
@@ -66,12 +66,14 @@ public class Login extends AppCompatActivity
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot)
                     {
+                        // If the code 'c' is not empty and doesn't already exists the it hosts a new game
                         if (!c.isEmpty() && !snapshot.exists())
                         {
                             // Set value for the player who hosts the game; if not given the default is "PLAYER1"
                             if(!t.getText().toString().isEmpty()) i.putExtra("playerName1", t.getText().toString());
                             else i.putExtra("playerName1", "PLAYER1");
 
+                            // Create a child with the hosting player's name'
                             db.child("codes").child(c).child("players").child("0").setValue(i.getStringExtra("playerName1"));
                             i.putExtra("host", true);
                             i.putExtra("online", true);
@@ -79,12 +81,13 @@ public class Login extends AppCompatActivity
                             finish();
                         }
 
+                        // If 'c' already exists or if it is null (the EditText was not filled out)
                         else
-                            Toast.makeText(Login.this, "Maybe you want to join...", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(Login.this, "Enter a valid code!", Toast.LENGTH_SHORT).show();
                     }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {}
+                    @Override // If there is some error during the previous operation
+                    public void onCancelled(@NonNull DatabaseError error) { Log.d("FIREDB", error.toString());}
                 });
             });
 
@@ -97,12 +100,14 @@ public class Login extends AppCompatActivity
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot)
                     {
-                        if (!c.isEmpty() && snapshot.exists() && snapshot.getChildrenCount() == 2)
+                        // If the code 'c' is not empty, exists and there is only one player (the host) in the game
+                        if(!c.isEmpty() && snapshot.exists() && snapshot.child("players").getChildrenCount() == 1)
                         {
                             // Set value for the player who joins the game; if not given the default is "PLAYER2"
                             if(!t.getText().toString().isEmpty()) i.putExtra("playerName2", t.getText().toString());
                             else i.putExtra("playerName2", "PLAYER2");
 
+                            // Create a child with the joining player's name
                             db.child("codes").child(c).child("players").child("1").setValue(i.getStringExtra("playerName2"));
                             i.putExtra("host", false);
                             i.putExtra("online", true);
@@ -110,12 +115,13 @@ public class Login extends AppCompatActivity
                             finish();
                         }
 
+                        // If 'c' not exists, is empty or the game room is already full (two players)
                         else
                             Toast.makeText(Login.this, "Enter a valid code", Toast.LENGTH_SHORT).show();
 
                     }
                     @Override
-                    public void onCancelled(@NonNull DatabaseError error) {}
+                    public void onCancelled(@NonNull DatabaseError error) {Log.d("FIREDB", error.toString());}
                 });
             });
         }
