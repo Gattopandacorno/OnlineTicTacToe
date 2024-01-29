@@ -8,15 +8,18 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 
@@ -59,6 +62,7 @@ public class Login extends AppCompatActivity
             EditText t = findViewById(R.id.player), code = findViewById(R.id.code);
 
             DatabaseReference db = FirebaseDatabase.getInstance().getReference();
+            DatabaseReference ref = db.child("codes");
 
             // Set click listener for when Create/Host button is touched
             findViewById(R.id.host).setOnClickListener(v ->{
@@ -71,24 +75,24 @@ public class Login extends AppCompatActivity
 
                 if(!c.isEmpty())
                 {
-                    db.child("codes").addValueEventListener(new ValueEventListener() {
+                    ref.addValueEventListener(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot snapshot)
                         {
-                            new Handler().postDelayed(() -> {
-                                if (!IsValueAvailable(snapshot, c))
-                                {
-                                    db.child("codes").push().setValue(c);
-                                    i.putExtra("host", true);
-                                    i.putExtra("online", true);
-                                    startActivity(i);
-                                    finish();
-                                }}, 2000);
+                            if (!IsValueAvailable(snapshot, c))
+                            {
+                                ref.child(c).child("players").setValue(Arrays.asList("p1", "p2"));
+                                i.putExtra("host", true);
+                                i.putExtra("online", true);
+                                startActivity(i);
+                                finish();
+                            }
                         }
 
                         @Override
                         public void onCancelled(@NonNull DatabaseError error) {}
                     });
+
                 }
                 else
                     Toast.makeText(this, "Enter a valid code", Toast.LENGTH_SHORT).show();
@@ -105,12 +109,13 @@ public class Login extends AppCompatActivity
 
                 if(!c.isEmpty())
                 {
-                    db.child("codes").addValueEventListener(new ValueEventListener() {
+                    ref.addValueEventListener(new ValueEventListener() {
                         @Override
-                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        public void onDataChange(@NonNull DataSnapshot snapshot)
+                        {
                             new Handler().postDelayed(() -> {
                                 if (IsValueAvailable(snapshot, c)) {
-                                    i.putExtra("playerName1", db.child("codes").child("players").get().toString());
+                                    //i.putExtra("playerName1", db.child("codes").child("players").get().toString());
                                     i.putExtra("host", false);
                                     i.putExtra("online", true);
                                     startActivity(i);

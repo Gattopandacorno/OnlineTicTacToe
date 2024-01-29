@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "512679912971",
-    "project_id": "onlinetictactoe-4e7b9",
-    "storage_bucket": "onlinetictactoe-4e7b9.appspot.com"
+    "project_number": "898982711365",
+    "project_id": "trisonline-e643b",
+    "storage_bucket": "trisonline-e643b.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:512679912971:android:c251310efebb279db8090e",
+        "mobilesdk_app_id": "1:898982711365:android:73f11fc8219db74fc4932c",
         "android_client_info": {
           "package_name": "io.gattopandacorno.onlinetictactoe"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCTrfA0QhuSoosf1bMrlCWkEBs4JoCHMlI"
+          "current_key": "AIzaSyBqfQD-YCbfhLV7p-CTxqxQu9RgSkX3BzI"
         }
       ],
       "services": {
