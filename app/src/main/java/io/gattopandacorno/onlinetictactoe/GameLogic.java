@@ -8,10 +8,13 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
 
 public class GameLogic extends AppCompatActivity
 {
@@ -20,6 +23,7 @@ public class GameLogic extends AppCompatActivity
     private final int[][] winComb = {{0, 1, 2}, {3, 4, 5}, {6, 7, 8},
                                      {0, 3, 6}, {1, 4, 7}, {2, 5, 8},
                                      {0, 4, 8}, {2, 4, 6}};
+
     // Store the situation in the game; 0 = not used, 1 = x, 2 = o
     private final int[] grid = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -31,6 +35,10 @@ public class GameLogic extends AppCompatActivity
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.gameboard);
+        DatabaseReference db = FirebaseDatabase.getInstance().getReference();
+        TextView tp1 = findViewById(R.id.tp1), tp2 = findViewById(R.id.tp2);
+        findViewById(R.id.t1).setVisibility(View.VISIBLE);
+        findViewById(R.id.t2).setVisibility(View.INVISIBLE);
 
         ImageView[] cells = {findViewById(R.id.i0), findViewById(R.id.i1), findViewById(R.id.i2),
                             findViewById(R.id.i3), findViewById(R.id.i4), findViewById(R.id.i5),
@@ -39,12 +47,8 @@ public class GameLogic extends AppCompatActivity
         // If the game mode is local
         if(!getIntent().getBooleanExtra("online", false))
         {
-            TextView tp1 = findViewById(R.id.tp1), tp2 = findViewById(R.id.tp2);
             tp1.setText(getIntent().getStringExtra("playerName1"));
             tp2.setText(getIntent().getStringExtra("playerName2"));
-
-            findViewById(R.id.t1).setVisibility(View.VISIBLE);
-            findViewById(R.id.t2).setVisibility(View.INVISIBLE);
 
             for(int i=0; i<9; i++)
             {
@@ -71,7 +75,7 @@ public class GameLogic extends AppCompatActivity
                             findViewById(R.id.t2).setVisibility(View.INVISIBLE);
                         }
 
-
+                        //new Thread(() -> {new Handler().post(() -> {AlertWin(cells, grid);});}).start();
                         turn = !turn;
                         return true;
                     }
@@ -84,7 +88,6 @@ public class GameLogic extends AppCompatActivity
         // If the game mode is online
         else
         {
-            Toast.makeText(this, "online game", Toast.LENGTH_SHORT).show();
         }
 
 
@@ -99,14 +102,21 @@ public class GameLogic extends AppCompatActivity
             finish();
         });
 
-        // This take to the MainActivity if the back button is pressed
+        // If the Back button is pressed it shows an Alert, if ok is pressed too it take the players to the MainActivity
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed()
             {
-                Intent i = new Intent(GameLogic.this, MainActivity.class);
-                startActivity(i);
-                finish();
+                new AlertDialog.Builder(GameLogic.this)
+                        .setMessage("Are you sure you want to leave the game?")
+                        .setNegativeButton("ok", (dialog, which) -> {
+                            // TODO: remove the code if it was an online game
+                            //db.child("codes").child(getIntent().getStringExtra("code")).removeValue();
+                            Intent i = new Intent(GameLogic.this, MainActivity.class);
+                            startActivity(i);
+                            finish();
+                        })
+                        .show();
             }
         });
     }
@@ -116,14 +126,14 @@ public class GameLogic extends AppCompatActivity
      * If in the grid there is a winning combination it returns the value of the winner; 1 = x, 2 = o
      * Otherwise it returns 0
      */
-    private int Win()
+    private int Win(int[]grid)
     {
         for(int i=0; i<9; i++)
             if(grid[winComb[i][0]] == grid[winComb[i][1]]  && grid[winComb[i][1]] == grid[winComb[i][2]])
                 return grid[winComb[i][0]];
 
         return 0;
-    } //TODO: Add win count here?
+    } // TODO: Add win count here
 
     /**
      * The reset function is not only used when reset button is clicked
@@ -143,17 +153,17 @@ public class GameLogic extends AppCompatActivity
     }
 
     /* If a player wins this function shows an alert message with the winner's name*/
-    private void AlertWin(ImageView[] c)
+    private void AlertWin(ImageView[] c, int[] grid)
     {
-        int w = Win();
+        int w = Win(grid);
 
-        if(w == 1) // if the winner is th
+        if(w == 1) // If the winner is the one with the X
             new AlertDialog.Builder(this).
                     setMessage(getIntent().getStringExtra("playerName1") + " WON THE GAME").
                     setPositiveButton("play again", (dialog, which) -> reset(c))
                     .show();
 
-        else if (w == 2)
+        else if (w == 2) // If the winner is the one with the O
             new AlertDialog.Builder(this).
                     setMessage(getIntent().getStringExtra("playerName2") + " WON THE GAME").
                     setPositiveButton("play again", (dialog, which) -> reset(c))
