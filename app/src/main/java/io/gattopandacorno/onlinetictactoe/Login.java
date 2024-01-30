@@ -69,14 +69,14 @@ public class Login extends AppCompatActivity
                         // If the code 'c' is not empty and doesn't already exists the it hosts a new game
                         if (!c.isEmpty() && !snapshot.exists())
                         {
-                            // Set value for the player who hosts the game; if not given the default is "PLAYER1"
+                            // Set database value for the player who hosts the game; if not given the default is "PLAYER1"
                             if(!t.getText().toString().isEmpty()) i.putExtra("playerName1", t.getText().toString());
                             else i.putExtra("playerName1", "PLAYER1");
 
-                            // Create a child with the hosting player's name'
-                            db.child("codes").child(c).child("players").child("0").setValue(i.getStringExtra("playerName1"));
+                            db.child("codes").child(c).child("0").setValue("PLAYER1");
                             i.putExtra("host", true);
                             i.putExtra("online", true);
+                            i.putExtra("code", c);
                             startActivity(i);
                             finish();
                         }
@@ -101,16 +101,18 @@ public class Login extends AppCompatActivity
                     public void onDataChange(@NonNull DataSnapshot snapshot)
                     {
                         // If the code 'c' is not empty, exists and there is only one player (the host) in the game
-                        if(!c.isEmpty() && snapshot.exists() && snapshot.child("players").getChildrenCount() == 1)
+                        if(!c.isEmpty() && snapshot.exists() && snapshot.getChildrenCount() == 1)
                         {
-                            // Set value for the player who joins the game; if not given the default is "PLAYER2"
+                            // Set database value for the player who hosts the game; if not given the default is "PLAYER1"
                             if(!t.getText().toString().isEmpty()) i.putExtra("playerName2", t.getText().toString());
-                            else i.putExtra("playerName2", "PLAYER2");
+                            else i.putExtra("playerName2", "PLAYER1");
 
-                            // Create a child with the joining player's name
-                            db.child("codes").child(c).child("players").child("1").setValue(i.getStringExtra("playerName2"));
+                            db.child("codes").child(c).child("1").setValue(i.getStringExtra("playerName22"));
+
+                            i.putExtra("code", c);
                             i.putExtra("host", false);
                             i.putExtra("online", true);
+                            i.putExtra("code", c);
                             startActivity(i);
                             finish();
                         }
