@@ -10,10 +10,16 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.Objects;
 
 
 public class GameLogic extends AppCompatActivity
@@ -35,7 +41,6 @@ public class GameLogic extends AppCompatActivity
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.gameboard);
-        DatabaseReference db = FirebaseDatabase.getInstance().getReference();
         TextView tp1 = findViewById(R.id.tp1), tp2 = findViewById(R.id.tp2);
         findViewById(R.id.t1).setVisibility(View.VISIBLE);
         findViewById(R.id.t2).setVisibility(View.INVISIBLE);
@@ -85,9 +90,22 @@ public class GameLogic extends AppCompatActivity
             }
         }
 
-        // If the game mode is online
+        // If the game mode is online AND the player created the game (host)
+        else if(getIntent().getBooleanExtra("host", false))
+        {
+            DatabaseReference db = FirebaseDatabase.getInstance().getReference()
+                    .child("codes").child(getIntent().getStringExtra("code"));
+            tp1.setText(getIntent().getStringExtra("playerName1"));
+
+        }
+
+        // If the game mode is online AND the player joined the game
         else
         {
+            DatabaseReference db = FirebaseDatabase.getInstance().getReference().child("codes")
+                    .child("codes").child(getIntent().getStringExtra("code"));
+
+            tp2.setText(getIntent().getStringExtra("playerName2"));
         }
 
 

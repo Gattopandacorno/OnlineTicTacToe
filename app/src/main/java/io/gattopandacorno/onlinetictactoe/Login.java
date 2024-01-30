@@ -73,7 +73,7 @@ public class Login extends AppCompatActivity
                             if(!t.getText().toString().isEmpty()) i.putExtra("playerName1", t.getText().toString());
                             else i.putExtra("playerName1", "PLAYER1");
 
-                            db.child("codes").child(c).child("0").setValue("PLAYER1");
+                            db.child("codes").child(c).child("0").setValue(i.getStringExtra("playerName1"));
                             i.putExtra("host", true);
                             i.putExtra("online", true);
                             i.putExtra("code", c);
@@ -105,9 +105,9 @@ public class Login extends AppCompatActivity
                         {
                             // Set database value for the player who hosts the game; if not given the default is "PLAYER1"
                             if(!t.getText().toString().isEmpty()) i.putExtra("playerName2", t.getText().toString());
-                            else i.putExtra("playerName2", "PLAYER1");
+                            else i.putExtra("playerName2", "PLAYER2");
 
-                            db.child("codes").child(c).child("1").setValue(i.getStringExtra("playerName22"));
+                            db.child("codes").child(c).child("1").setValue(i.getStringExtra("playerName2"));
 
                             i.putExtra("code", c);
                             i.putExtra("host", false);
