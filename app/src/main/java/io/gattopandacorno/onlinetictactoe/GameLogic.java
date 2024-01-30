@@ -10,10 +10,16 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.Objects;
 
 
 public class GameLogic extends AppCompatActivity
@@ -35,7 +41,7 @@ public class GameLogic extends AppCompatActivity
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.gameboard);
-        DatabaseReference db = FirebaseDatabase.getInstance().getReference();
+        DatabaseReference db = FirebaseDatabase.getInstance().getReference().child("codes");
         TextView tp1 = findViewById(R.id.tp1), tp2 = findViewById(R.id.tp2);
         findViewById(R.id.t1).setVisibility(View.VISIBLE);
         findViewById(R.id.t2).setVisibility(View.INVISIBLE);
@@ -88,6 +94,21 @@ public class GameLogic extends AppCompatActivity
         // If the game mode is online
         else
         {
+            if(getIntent().getBooleanExtra("host", false))
+            {
+                db.child(Objects.requireNonNull(getIntent().getStringExtra("code"))).child("0").addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot)
+                    {
+                        String ip = (String) snapshot.getValue();
+                        // TODO: insert connection to host here
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {}
+                });
+            }
+
         }
 
 
@@ -98,7 +119,7 @@ public class GameLogic extends AppCompatActivity
         findViewById(R.id.home).setOnClickListener(v -> {
             Intent i = new Intent(this, MainActivity.class);
 
-            startActivity(i); //Return to home view called activity_main
+            startActivity(i); //Return to home view
             finish();
         });
 

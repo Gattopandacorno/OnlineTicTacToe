@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.EditText;
@@ -16,6 +17,11 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 
 public class Login extends AppCompatActivity
@@ -73,9 +79,22 @@ public class Login extends AppCompatActivity
                             if(!t.getText().toString().isEmpty()) i.putExtra("playerName1", t.getText().toString());
                             else i.putExtra("playerName1", "PLAYER1");
 
-                            db.child("codes").child(c).child("0").setValue("PLAYER1");
-                            i.putExtra("host", true);
+
+
+                            WifiManager manager = (WifiManager) getSystemService(WIFI_SERVICE);
+                            try {
+                                String ip = InetAddress.getByAddress(ByteBuffer
+                                                .allocate(Integer.BYTES)
+                                                .order(ByteOrder.LITTLE_ENDIAN)
+                                                .putInt(manager.getConnectionInfo().getIpAddress())
+                                                .array()).getHostAddress();
+                                db.child("codes").child(c).child("0").setValue(ip);
+                            }
+                            catch (UnknownHostException e) {throw new RuntimeException(e);}
+
+
                             i.putExtra("online", true);
+                            i.putExtra("host", true);
                             i.putExtra("code", c);
                             startActivity(i);
                             finish();
@@ -107,11 +126,19 @@ public class Login extends AppCompatActivity
                             if(!t.getText().toString().isEmpty()) i.putExtra("playerName2", t.getText().toString());
                             else i.putExtra("playerName2", "PLAYER1");
 
-                            db.child("codes").child(c).child("1").setValue(i.getStringExtra("playerName22"));
+                            WifiManager manager = (WifiManager) getSystemService(WIFI_SERVICE);
+                            try {
+                                String ip = InetAddress.getByAddress(ByteBuffer
+                                        .allocate(Integer.BYTES)
+                                        .order(ByteOrder.LITTLE_ENDIAN)
+                                        .putInt(manager.getConnectionInfo().getIpAddress())
+                                        .array()).getHostAddress();
+                                db.child("codes").child(c).child("1").setValue(ip);
+                            }
+                            catch (UnknownHostException e) {throw new RuntimeException(e);}
 
-                            i.putExtra("code", c);
-                            i.putExtra("host", false);
                             i.putExtra("online", true);
+                            i.putExtra("host", false);
                             i.putExtra("code", c);
                             startActivity(i);
                             finish();
