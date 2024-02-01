@@ -4,6 +4,8 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
@@ -80,7 +82,9 @@ public class GameLogic extends AppCompatActivity
                             findViewById(R.id.t2).setVisibility(View.INVISIBLE);
                         }
 
-                        //new Thread(() -> {new Handler().post(() -> {AlertWin(cells, grid);});}).start();
+                        // Create a thread to control if somebody win
+                        // Thread cannot be used because after calling Win it shows an alert dialog
+                        runOnUiThread(() -> AlertWin(cells, grid));
                         turn = !turn;
                         return true;
                     }
@@ -146,7 +150,7 @@ public class GameLogic extends AppCompatActivity
      */
     private int Win(int[]grid)
     {
-        for(int i=0; i<9; i++)
+        for(int i=0; i<8; i++)
             if(grid[winComb[i][0]] == grid[winComb[i][1]]  && grid[winComb[i][1]] == grid[winComb[i][2]])
                 return grid[winComb[i][0]];
 
