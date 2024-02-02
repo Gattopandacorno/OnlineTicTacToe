@@ -4,8 +4,13 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
+import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Bundle;
+import android.os.Looper;
+import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -83,6 +88,25 @@ public class Login extends AppCompatActivity
                 // If the code 'c' is not empty, exists and there is only one player (the host) in the game
                 if(!c.isEmpty())
                 {
+                    WifiP2pManager mng = (WifiP2pManager) getApplicationContext().getSystemService(Context.WIFI_P2P_SERVICE);
+
+                    WifiP2pManager.Channel channel = mng.initialize(this, Looper.getMainLooper(), () -> Log.d("WIFIP2P", "Channel disconnected"));
+
+                    mng.discoverPeers(channel, new WifiP2pManager.ActionListener() {
+                        @Override
+                        public void onSuccess()
+                        {
+                            Toast.makeText(Login.this, "Start discovery", Toast.LENGTH_SHORT).show();
+                            mng.requestPeers(channel, peers -> {
+                                for (WifiP2pDevice device : peers.getDeviceList())
+                                   Log.d("DEVICE NAME", device.deviceName);
+                            });
+                        }
+
+                        @Override
+                        public void onFailure(int reason) {}
+                    });
+
                     // Set database value for the player who hosts the game; if not given the default is "PLAYER1"
                     if(!t.getText().toString().isEmpty()) i.putExtra("playerName2", t.getText().toString());
                     else i.putExtra("playerName2", "PLAYER1");
@@ -98,7 +122,6 @@ public class Login extends AppCompatActivity
                 // If 'c' not exists, is empty or the game room is already full (two players)
                 else
                     Toast.makeText(Login.this, "Enter a valid code", Toast.LENGTH_SHORT).show();
-
 
             });
 
@@ -117,3 +140,4 @@ public class Login extends AppCompatActivity
         });
     }
 }
+
