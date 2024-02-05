@@ -2,19 +2,12 @@ package io.gattopandacorno.onlinetictactoe;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.Intent;
-import android.net.wifi.p2p.WifiP2pDevice;
-import android.net.wifi.p2p.WifiP2pDeviceList;
-import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Bundle;
-import android.os.Looper;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
@@ -39,6 +32,7 @@ public class GameLogic extends AppCompatActivity
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.gameboard);
+
         TextView tp1 = findViewById(R.id.tp1), tp2 = findViewById(R.id.tp2);
         findViewById(R.id.t1).setVisibility(View.VISIBLE);
         findViewById(R.id.t2).setVisibility(View.INVISIBLE);
@@ -91,7 +85,6 @@ public class GameLogic extends AppCompatActivity
         // If the game mode is online
         else
         {
-
         }
 
 
