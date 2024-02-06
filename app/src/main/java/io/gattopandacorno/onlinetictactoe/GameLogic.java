@@ -12,9 +12,6 @@ import android.widget.TextView;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-
 
 public class GameLogic extends AppCompatActivity
 {
@@ -86,22 +83,9 @@ public class GameLogic extends AppCompatActivity
             }
         }
 
-        // If the game mode is online AND the player created the game (host)
-        else if(getIntent().getBooleanExtra("host", false))
-        {
-            DatabaseReference db = FirebaseDatabase.getInstance().getReference()
-                    .child("codes").child(getIntent().getStringExtra("code"));
-            tp1.setText(getIntent().getStringExtra("playerName1"));
-
-        }
-
-        // If the game mode is online AND the player joined the game
         else
         {
-            DatabaseReference db = FirebaseDatabase.getInstance().getReference().child("codes")
-                    .child("codes").child(getIntent().getStringExtra("code"));
 
-            tp2.setText(getIntent().getStringExtra("playerName2"));
         }
 
 

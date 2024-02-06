@@ -82,22 +82,14 @@
         app:layout_constraintStart_toStartOf="parent">
 
         <Button
-            android:id="@+id/join"
+            android:id="@+id/play"
             android:layout_width="@android:dimen/thumbnail_width"
             android:layout_height="@android:dimen/app_icon_size"
             android:layout_marginEnd="@dimen/cardview_default_radius"
             android:layout_weight="1"
-            android:text="Join Match"
+            android:text="Play game"
             tools:ignore="ButtonStyle,HardcodedText" />
 
-        <Button
-            android:id="@+id/host"
-            android:layout_width="@android:dimen/thumbnail_width"
-            android:layout_height="@android:dimen/app_icon_size"
-            android:layout_marginEnd="@dimen/cardview_default_radius"
-            android:layout_weight="1"
-            android:text="Host Match"
-            tools:ignore="ButtonStyle,HardcodedText" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
