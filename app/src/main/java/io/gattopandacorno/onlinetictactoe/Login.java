@@ -10,18 +10,25 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
+import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
 import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.os.Bundle;
 import android.os.Looper;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
-public class Login extends AppCompatActivity {
+
+public class Login extends AppCompatActivity
+{
 
     WifiP2pManager mng;
     WifiP2pManager.Channel channel;
@@ -30,17 +37,17 @@ public class Login extends AppCompatActivity {
 
     @SuppressLint({"SetTextI18n", "NewApi"})
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
 
-        mng = (WifiP2pManager) getApplicationContext().getSystemService(Context.WIFI_P2P_SERVICE);
-        channel = mng.initialize(this, Looper.getMainLooper(), () -> Log.d("WIFIP2P", "Channel disconnected"));
-        receiver = new Wifip2pReceiver(mng, channel, Login.this);
+
 
         Intent i = new Intent(this, GameLogic.class);
 
         //If the game is in local mode the players have to compile formlocal
-        if (!getIntent().getBooleanExtra("online", false)) {
+        if (!getIntent().getBooleanExtra("online", false))
+        {
             setContentView(R.layout.formlocal);
             EditText t1 = findViewById(R.id.player1), t2 = findViewById(R.id.player2);
 
@@ -62,9 +69,14 @@ public class Login extends AppCompatActivity {
         }
 
         //Else (mode = online) the form will be formonline
-        else {
+        else
+        {
             setContentView(R.layout.formonline);
             EditText t = findViewById(R.id.player), code = findViewById(R.id.code);
+
+            mng      = (WifiP2pManager) getApplicationContext().getSystemService(Context.WIFI_P2P_SERVICE);
+            channel  = mng.initialize(this, Looper.getMainLooper(), () -> Log.d("WIFIP2P", "Channel disconnected"));
+            receiver = new Wifip2pReceiver(mng, channel, Login.this);
 
             ActivityCompat.requestPermissions(Login.this, new String[]{
                     Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -74,30 +86,12 @@ public class Login extends AppCompatActivity {
                     Manifest.permission.NEARBY_WIFI_DEVICES,
                     Manifest.permission.ACCESS_FINE_LOCATION}, 111);
 
-            // Set click listener for when Create/Host button is touched
-            findViewById(R.id.host).setOnClickListener(v -> {
+            fil.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
+            fil.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
+            fil.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
+            fil.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
 
-                String c = code.getText().toString();
-
-                // If the code 'c' is not empty and doesn't already exists the it hosts a new game
-                if (!c.isEmpty()) {
-                    // Set database value for the player who hosts the game; if not given the default is "PLAYER1"
-                    if (!t.getText().toString().isEmpty())
-                        i.putExtra("playerName1", t.getText().toString());
-                    else i.putExtra("playerName1", "PLAYER1");
-
-
-                    i.putExtra("online", true);
-                    i.putExtra("host", true);
-                    i.putExtra("code", c);
-                    startActivity(i);
-                    finish();
-                }
-
-                // If 'c' already exists or if it is null (the EditText was not filled out)
-                else
-                    Toast.makeText(Login.this, "Enter a valid code!", Toast.LENGTH_SHORT).show();
-            });
+            List<WifiP2pDevice> devlist = new ArrayList<>();
 
             // Set click listener for when Join button is touched
             findViewById(R.id.join).setOnClickListener(v -> {
@@ -105,20 +99,36 @@ public class Login extends AppCompatActivity {
                 String c = code.getText().toString();
 
                 // If the code 'c' is not empty, exists and there is only one player (the host) in the game
-                if (!c.isEmpty()) {
-                    // Set database value for the player who hosts the game; if not given the default is "PLAYER1"
+                if (!c.isEmpty())
+                {
+
                     if (!t.getText().toString().isEmpty())
                         i.putExtra("playerName2", t.getText().toString());
                     else i.putExtra("playerName2", "PLAYER2");
 
+                    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == 0)
+                    {
+                        mng.discoverPeers(channel, new WifiP2pManager.ActionListener() {
 
-                    i.putExtra("online", true);
-                    i.putExtra("host", false);
-                    i.putExtra("code", c);
+                            @SuppressLint("MissingPermission")
+                            @Override
+                            public void onSuccess()
+                            {
+                                Log.d("WIFIP2P", "discovery started");
+                            }
+
+                            @Override
+                            public void onFailure(int reason) {Log.d("WIFIP2P", "fails on discovery " + reason);}
+                        });
+                    }
 
 
-                    startActivity(i);
-                    finish();
+                    //i.putExtra("online", true);
+                    //i.putExtra("code", c);
+
+
+                    //startActivity(i);
+                    //finish();
                 }
 
                 // If 'c' not exists, is empty or the game room is already full (two players)
@@ -143,54 +153,20 @@ public class Login extends AppCompatActivity {
 
 
     @Override
-    protected void onResume() {
+    protected void onResume()
+    {
         super.onResume();
         registerReceiver(receiver, fil);
     }
 
     @Override
-    protected void onPause() {
+    protected void onPause()
+    {
         super.onPause();
         unregisterReceiver(receiver);
     }
 
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (requestCode == 111 && grantResults.length > 0) {
-            fil.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION);
-            fil.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
-            fil.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
-            fil.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
-
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != 0
-                    || ActivityCompat.checkSelfPermission(this, Manifest.permission.NEARBY_WIFI_DEVICES) != 0)
-            {
-                mng.discoverServices(channel, new WifiP2pManager.ActionListener() {
-
-                    @SuppressLint("MissingPermission")
-                    @Override
-                    public void onSuccess()
-                    {
-                        Log.d("WIFIP2P", "discovery started");
-
-
-                        mng.requestPeers(channel, peers -> {
-                            for(WifiP2pDevice dev : peers.getDeviceList())
-                                Log.d("WIFIP2P", "DEV NAME: " + dev.deviceName);
-                        });
-                    }
-
-                    @Override
-                    public void onFailure(int reason)
-                    {
-                        Log.d("WIFIP2P", "fails on discovery " + reason);
-                    }
-                });
-            }
-        }
-    }
 }
 

@@ -85,6 +85,7 @@ public class GameLogic extends AppCompatActivity
         // If the game mode is online
         else
         {
+
         }
 
 
@@ -142,6 +143,7 @@ public class GameLogic extends AppCompatActivity
         turn = true;
         findViewById(R.id.t1).setVisibility(View.VISIBLE);
         findViewById(R.id.t2).setVisibility(View.INVISIBLE);
+
         for(int i=0; i<9; i++)
         {
             c[i].setImageDrawable(getDrawable(R.drawable.ic_launcher_background));
