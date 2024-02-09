@@ -4,16 +4,24 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+
+import java.util.Collections;
 
 
 public class GameLogic extends AppCompatActivity
@@ -28,6 +36,7 @@ public class GameLogic extends AppCompatActivity
     private final int[] grid = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     private boolean turn = true;
+    int pl; // pl is the value used to distinguish player1 from player2
 
     @SuppressLint({"SetTextI18n", "UseCompatLoadingForDrawables", "ClickableViewAccessibility"})
     @Override
@@ -86,22 +95,41 @@ public class GameLogic extends AppCompatActivity
             }
         }
 
-        // If the game mode is online AND the player created the game (host)
-        else if(getIntent().getBooleanExtra("host", false))
-        {
-            DatabaseReference db = FirebaseDatabase.getInstance().getReference()
-                    .child("codes").child(getIntent().getStringExtra("code"));
-            tp1.setText(getIntent().getStringExtra("playerName1"));
-
-        }
-
-        // If the game mode is online AND the player joined the game
+        // If the game mode is online
         else
         {
-            DatabaseReference db = FirebaseDatabase.getInstance().getReference().child("codes")
-                    .child("codes").child(getIntent().getStringExtra("code"));
+            String code = getIntent().getStringExtra("code");
 
-            tp2.setText(getIntent().getStringExtra("playerName2"));
+            assert code != null;
+
+            DatabaseReference db = FirebaseDatabase.getInstance().getReference()
+                    .child("codes").child(code);
+            db.child("data").push().setValue(Collections.singletonList(grid));
+
+            db.child("data").addChildEventListener(new ChildEventListener() {
+                @Override
+                public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {}
+
+                @Override
+                public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName)
+                {
+                    turn = moveOnline(snapshot, turn, cells);
+                    db.child("data").push().setValue(grid);
+                }
+
+                @Override
+                public void onChildRemoved(@NonNull DataSnapshot snapshot)
+                {
+                    reset(cells);
+                }
+
+                @Override
+                public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {}
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {Log.d("DB", "on cancelled data " + error);}
+            });
+
         }
 
 
@@ -124,8 +152,8 @@ public class GameLogic extends AppCompatActivity
                 new AlertDialog.Builder(GameLogic.this)
                         .setMessage("Are you sure you want to leave the game?")
                         .setNegativeButton("ok", (dialog, which) -> {
-                            // TODO: remove the code if it was an online game
-                            //db.child("codes").child(getIntent().getStringExtra("code")).removeValue();
+                            if(getIntent().getBooleanExtra("online", false))
+                                FirebaseDatabase.getInstance().getReference().child("codes").child(getIntent().getStringExtra("code")).removeValue();
                             Intent i = new Intent(GameLogic.this, MainActivity.class);
                             startActivity(i);
                             finish();
@@ -140,7 +168,7 @@ public class GameLogic extends AppCompatActivity
      * If in the grid there is a winning combination it returns the value of the winner; 1 = x, 2 = o
      * Otherwise it returns 0
      */
-    private int Win(int[]grid)
+    private int Win(int[] grid)
     {
         for(int i=0; i<8; i++)
             if(grid[winComb[i][0]] == grid[winComb[i][1]]  && grid[winComb[i][1]] == grid[winComb[i][2]])
@@ -182,5 +210,35 @@ public class GameLogic extends AppCompatActivity
                     setMessage(getIntent().getStringExtra("playerName2") + " WON THE GAME").
                     setPositiveButton("play again", (dialog, which) -> reset(c))
                     .show();
+    }
+
+    @SuppressLint("UseCompatLoadingForDrawables")
+    private boolean moveOnline(DataSnapshot data, boolean turn, ImageView[] cells)
+    {
+        int pos = (int) data.getValue();
+        if(turn && grid[pos] == 0)
+        {
+            if(pl == 1)
+            {
+                cells[pos].setImageDrawable(getDrawable(R.drawable.x));
+                grid[pos] = 1;
+            }
+
+            else
+            {
+                cells[pos].setImageDrawable(getDrawable(R.drawable.o));
+                grid[pos] = 2;
+            }
+
+            findViewById(R.id.t1).setVisibility(View.VISIBLE);
+            findViewById(R.id.t2).setVisibility(View.INVISIBLE);
+        }
+        else
+        {
+            findViewById(R.id.t2).setVisibility(View.VISIBLE);
+            findViewById(R.id.t1).setVisibility(View.INVISIBLE);
+        }
+
+        return !turn;
     }
 }
