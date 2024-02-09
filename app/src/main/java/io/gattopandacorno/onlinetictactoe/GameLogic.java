@@ -1,9 +1,17 @@
 package io.gattopandacorno.onlinetictactoe;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.wifi.p2p.WifiP2pManager;
+import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Looper;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
@@ -11,7 +19,10 @@ import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
+import java.util.HashMap;
+import java.util.Map;
 
 public class GameLogic extends AppCompatActivity
 {
@@ -25,6 +36,11 @@ public class GameLogic extends AppCompatActivity
     private final int[] grid = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     private boolean turn = true;
+
+    WifiP2pManager mng;
+    WifiP2pManager.Channel channel;
+    Wifip2pReceiver receiver;
+    IntentFilter fil = new IntentFilter();
 
     @SuppressLint({"SetTextI18n", "UseCompatLoadingForDrawables", "ClickableViewAccessibility"})
     @Override
@@ -85,7 +101,11 @@ public class GameLogic extends AppCompatActivity
         // If the game mode is online
         else
         {
+            mng      = (WifiP2pManager) getApplicationContext().getSystemService(Context.WIFI_P2P_SERVICE);
+            channel  = mng.initialize(this, Looper.getMainLooper(), () -> Log.d("WIFIP2P", "Channel disconnected"));
+            receiver = new Wifip2pReceiver(mng, channel, GameLogic.this);
 
+            new Thread(this::startRegistration).start();
         }
 
 
@@ -108,8 +128,8 @@ public class GameLogic extends AppCompatActivity
                 new AlertDialog.Builder(GameLogic.this)
                         .setMessage("Are you sure you want to leave the game?")
                         .setNegativeButton("ok", (dialog, which) -> {
-                            // TODO: remove the code if it was an online game
-                            //db.child("codes").child(getIntent().getStringExtra("code")).removeValue();
+                            // TODO: remove the room if it was an online game
+                            //mng.removeGroup();
                             Intent i = new Intent(GameLogic.this, MainActivity.class);
                             startActivity(i);
                             finish();
@@ -168,4 +188,43 @@ public class GameLogic extends AppCompatActivity
                     setPositiveButton("play again", (dialog, which) -> reset(c))
                     .show();
     }
+
+    @Override
+    protected void onPause()
+    {
+        super.onPause();
+        unregisterReceiver(receiver);
+    }
+
+    @Override
+    protected void onResume()
+    {
+        super.onResume();
+        registerReceiver(receiver, fil);
+    }
+
+    private void startRegistration()
+    {
+        //  Create a string map containing information about your service.
+        Map record = new HashMap();
+        record.put("DevName", "android1");
+        record.put("Available", "visible");
+
+        // Service information.  Pass an instance name, service type
+        // _protocol._transportlayer , and the map containing
+        // information other devices will want once they connect to this one.
+        WifiP2pDnsSdServiceInfo serviceInfo =
+                WifiP2pDnsSdServiceInfo.newInstance("_android1", "_presence._tcp", record);
+
+        // Add the local service, sending the service info, network channel,
+        // and listener that will be used to indicate success or failure of the request.
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == 0)
+            mng.addLocalService(channel, serviceInfo, new WifiP2pManager.ActionListener() {
+                @Override
+                public void onSuccess() {Log.d("WIFIP2P", "service created!");}
+                @Override
+                public void onFailure(int reason) {Log.d("WIFIP2P", "service not created " + reason);}
+            });
+    }
+
 }
