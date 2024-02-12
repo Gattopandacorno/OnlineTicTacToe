@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest;
 import android.os.Build;
@@ -91,7 +92,31 @@ public class Login extends AppCompatActivity
                     i.putExtra("online", true);
                     i.putExtra("code", c);
 
-                    new Thread(this::requestService).start();
+                    if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == 0)
+                        new Thread(new Runnable() {
+                            @SuppressLint("MissingPermission")
+                            @Override
+                            public void run() {
+                                mng.discoverPeers(channel, new WifiP2pManager.ActionListener() {
+                                    @Override
+                                    public void onSuccess()
+                                    {
+                                        Log.d("WIFIP2P", "start discovery");
+                                        mng.requestPeers(channel, peers -> {
+
+                                            if(peers.getDeviceList().size() == 0)
+                                                Log.d("WIFIP2P", "no device found");
+                                            else
+                                                for(WifiP2pDevice p : peers.getDeviceList())
+                                                    Log.d("WIFIP2P", "device " + p.deviceName);
+                                        });
+                                    }
+
+                                    @Override
+                                    public void onFailure(int reason) {Log.d("WIFIP2P", "discover failed " + reason);}
+                                });
+                            }
+                        }).start();
 
                     startActivity(i);
                     finish();
@@ -132,52 +157,5 @@ public class Login extends AppCompatActivity
         unregisterReceiver(receiver);
     }
 
-    private void discoverService()
-    {
-        /* Callback includes:
-         * fullDomain: full domain name: e.g. "printer._ipp._tcp.local."
-         * record: TXT record dta as a map of key/value pairs.
-         * device: The device running the advertised service.
-         */
-        WifiP2pManager.DnsSdTxtRecordListener txtListener =
-                (fullDomainName, txtRecordMap, srcDevice) -> {
-                    Log.d("WIFIP2P", "TxTRecord available -" + txtRecordMap.toString());
-                    services.put(srcDevice.deviceAddress, txtRecordMap.get("DevName"));
-                };
-
-        WifiP2pManager.DnsSdServiceResponseListener servListener =
-                (instanceName, registrationType, resourceType) -> Log.d("WIFIP2P", "onService available " + instanceName);
-
-        mng.setDnsSdResponseListeners(channel, servListener, txtListener);
-    }
-
-    private void requestService()
-    {
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == 0)
-            mng.addServiceRequest(channel, WifiP2pDnsSdServiceRequest.newInstance(), new WifiP2pManager.ActionListener() {
-                @SuppressLint("MissingPermission")
-                @Override
-                public void onSuccess()
-                {
-                    mng.discoverServices(channel, new WifiP2pManager.ActionListener() {
-                        @Override
-                        public void onSuccess() { discoverService();}
-
-                        @Override
-                        public void onFailure(int reason)
-                        {
-                            if (reason == WifiP2pManager.P2P_UNSUPPORTED)
-                                Log.d("WIFIP2P", "Wi-Fi Direct not supported" + reason);
-                        }
-                    });
-                }
-                @Override
-                public void onFailure(int reason)
-                {
-                    if (reason == WifiP2pManager.P2P_UNSUPPORTED)
-                        Log.d("WIFIP2P", "Wi-Fi Direct not supported" + reason);
-                }
-            });
-    }
 }
 

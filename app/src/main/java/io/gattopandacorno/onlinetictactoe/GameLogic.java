@@ -6,6 +6,9 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.wifi.p2p.WifiP2pConfig;
+import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo;
 import android.os.Build;
@@ -105,7 +108,23 @@ public class GameLogic extends AppCompatActivity
             channel  = mng.initialize(this, Looper.getMainLooper(), () -> Log.d("WIFIP2P", "Channel disconnected"));
             receiver = new Wifip2pReceiver(mng, channel, GameLogic.this);
 
-            new Thread(this::startRegistration).start();
+            String code = getIntent().getStringExtra("code");
+            WifiP2pConfig config = new WifiP2pConfig.Builder().setNetworkName("DIRECT-"+code).setPassphrase(code).build();
+            config.groupOwnerIntent = 15;  //Value between 0-15
+
+
+            new Thread(() -> {
+                if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == 0)
+                {
+                    mng.createGroup(channel, config, new WifiP2pManager.ActionListener() {
+                        @Override
+                        public void onSuccess() {Log.d("WIFIP2P", "Group created");}
+
+                        @Override
+                        public void onFailure(int reason) { Log.d("WIFIP2P", "creating group failed " + reason);}
+                    });
+                }
+            }).start();
         }
 
 
@@ -202,29 +221,4 @@ public class GameLogic extends AppCompatActivity
         super.onResume();
         registerReceiver(receiver, fil);
     }
-
-    private void startRegistration()
-    {
-        //  Create a string map containing information about your service.
-        Map record = new HashMap();
-        record.put("DevName", "android1");
-        record.put("Available", "visible");
-
-        // Service information.  Pass an instance name, service type
-        // _protocol._transportlayer , and the map containing
-        // information other devices will want once they connect to this one.
-        WifiP2pDnsSdServiceInfo serviceInfo =
-                WifiP2pDnsSdServiceInfo.newInstance("_android1", "_presence._tcp", record);
-
-        // Add the local service, sending the service info, network channel,
-        // and listener that will be used to indicate success or failure of the request.
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == 0)
-            mng.addLocalService(channel, serviceInfo, new WifiP2pManager.ActionListener() {
-                @Override
-                public void onSuccess() {Log.d("WIFIP2P", "service created!");}
-                @Override
-                public void onFailure(int reason) {Log.d("WIFIP2P", "service not created " + reason);}
-            });
-    }
-
 }

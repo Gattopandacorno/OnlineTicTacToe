@@ -54,11 +54,6 @@ public class Wifip2pReceiver extends BroadcastReceiver
                    });
 
             case WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION:
-                if(mydev != null)
-                {
-                    mydev.deviceName = "newName";
-                    Log.d("WIFIP2P", "mydev name " + mydev.deviceName);
-                }
             case WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION:
                 // respond to connection or disconnection
 
