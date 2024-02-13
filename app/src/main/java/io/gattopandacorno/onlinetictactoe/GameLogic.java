@@ -2,7 +2,10 @@ package io.gattopandacorno.onlinetictactoe;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.net.nsd.NsdManager;
+import android.net.nsd.NsdServiceInfo;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
@@ -11,6 +14,9 @@ import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+
+import java.io.IOException;
+import java.net.Socket;
 
 
 public class GameLogic extends AppCompatActivity
@@ -83,11 +89,14 @@ public class GameLogic extends AppCompatActivity
             }
         }
 
+        else if(getIntent().getBooleanExtra("host", false))
+        {
+        }
+
         else
         {
 
         }
-
 
         //Setting click listener for when reset/play again button is clicked
         findViewById(R.id.reset).setOnClickListener(v -> reset(cells));

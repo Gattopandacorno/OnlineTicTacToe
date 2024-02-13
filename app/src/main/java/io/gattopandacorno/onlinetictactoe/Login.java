@@ -1,15 +1,20 @@
 package io.gattopandacorno.onlinetictactoe;
 
 import androidx.activity.OnBackPressedCallback;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
+import android.net.nsd.NsdManager;
+import android.net.nsd.NsdServiceInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import java.io.IOException;
+import java.net.Socket;
 
 
 public class Login extends AppCompatActivity
@@ -49,24 +54,67 @@ public class Login extends AppCompatActivity
         {
             setContentView(R.layout.formonline);
             EditText t = findViewById(R.id.player), code = findViewById(R.id.code);
+            NsdManager nsd = (NsdManager) getSystemService(Context.NSD_SERVICE);
 
-            // Set click listener for when Create/Host button is touched
-            findViewById(R.id.play).setOnClickListener(v ->{
+            findViewById(R.id.join).setOnClickListener(v -> {
 
                 String c = code.getText().toString();
-                // Set database value for the player who hosts the game; if not given the default is "PLAYER1"
-                if(!t.getText().toString().isEmpty()) i.putExtra("playerName1", t.getText().toString());
-                else i.putExtra("playerName1", "PLAYER1");
+                NsdServiceInfo sinfo = new NsdServiceInfo();
+                sinfo.setServiceType("_TRIS._tcp.");
+                sinfo.setPort(1111);
+                sinfo.setServiceName("TRIS");
 
-                i.putExtra("host", true);
-                i.putExtra("online", true);
-                i.putExtra("code", c);
-                startActivity(i);
-                finish();
+                nsd.registerService(sinfo, NsdManager.PROTOCOL_DNS_SD, new NsdManager.RegistrationListener() {
+                    @Override
+                    public void onRegistrationFailed(NsdServiceInfo serviceInfo, int errorCode)
+                    {
+                        nsd.discoverServices("_TRIS._tcp.", NsdManager.PROTOCOL_DNS_SD, new NsdManager.DiscoveryListener() {
+                            @Override
+                            public void onStartDiscoveryFailed(String serviceType, int errorCode) {Log.d("SOCKET", "discovery failed" + errorCode);}
+                            @Override
+                            public void onStopDiscoveryFailed(String serviceType, int errorCode) {Log.d("SOCKET", "stop discovery failed" + errorCode);}
+                            @Override
+                            public void onDiscoveryStarted(String serviceType) {Log.d("SOCKET", "start discovery");}
+                            @Override
+                            public void onDiscoveryStopped(String serviceType) {Log.d("SOCKET", "discovery stopped");}
+                            @Override
+                            public void onServiceFound(NsdServiceInfo serviceInfo)
+                            {
+                                if(serviceInfo.getHostAddresses().size() == 0)
+                                    nsd.resolveService(serviceInfo, new NsdManager.ResolveListener() {
+                                        @Override
+                                        public void onResolveFailed(NsdServiceInfo serviceInfo, int errorCode) {}
+
+                                        @Override
+                                        public void onServiceResolved(NsdServiceInfo serviceInfo)
+                                        {
+                                            try {Socket s = new Socket(serviceInfo.getHost(), serviceInfo.getPort());}
+                                            catch (IOException e)
+                                            {throw new RuntimeException(e);}
+
+                                        }
+                                    });
+
+                                else Toast.makeText(Login.this, "Game room already full", Toast.LENGTH_SHORT).show();
+                            }
+                            @Override
+                            public void onServiceLost(NsdServiceInfo serviceInfo) {Log.d("SOCKET", "service lost");}
+                        });
+                    }
+
+                    @Override
+                    public void onUnregistrationFailed(NsdServiceInfo serviceInfo, int errorCode) {Log.d("SOCKET", "Service not registered" +errorCode);}
+
+                    @Override
+                    public void onServiceRegistered(NsdServiceInfo serviceInfo) {Log.d("SOCKET", "Service registered!");}
+
+                    @Override
+                    public void onServiceUnregistered(NsdServiceInfo serviceInfo) {Log.d("SOCKET", "Service unregistered!");}
+                });
+
 
             });
         }
-
 
         /* This take to the MainActivity if the back button is pressed */
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
