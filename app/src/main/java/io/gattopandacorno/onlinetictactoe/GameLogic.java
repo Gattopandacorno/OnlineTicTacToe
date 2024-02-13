@@ -15,6 +15,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.Firebase;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -22,6 +23,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.Collections;
+import java.util.Objects;
 
 
 public class GameLogic extends AppCompatActivity
@@ -104,7 +106,7 @@ public class GameLogic extends AppCompatActivity
 
             DatabaseReference db = FirebaseDatabase.getInstance().getReference()
                     .child("codes").child(code);
-            db.child("data").push().setValue(Collections.singletonList(grid));
+            //db.child("data").push().setValue(Collections.singletonList(grid));
 
             db.child("data").addChildEventListener(new ChildEventListener() {
                 @Override
@@ -140,6 +142,12 @@ public class GameLogic extends AppCompatActivity
         findViewById(R.id.home).setOnClickListener(v -> {
             Intent i = new Intent(this, MainActivity.class);
 
+            if(getIntent().getBooleanExtra("online", false))
+                FirebaseDatabase.getInstance()
+                        .getReference().child("codes")
+                        .child(Objects.requireNonNull(getIntent().getStringExtra("code")))
+                        .removeValue();
+
             startActivity(i); //Return to home view called activity_main
             finish();
         });
@@ -153,7 +161,10 @@ public class GameLogic extends AppCompatActivity
                         .setMessage("Are you sure you want to leave the game?")
                         .setNegativeButton("ok", (dialog, which) -> {
                             if(getIntent().getBooleanExtra("online", false))
-                                FirebaseDatabase.getInstance().getReference().child("codes").child(getIntent().getStringExtra("code")).removeValue();
+                                FirebaseDatabase.getInstance().getReference().child("codes")
+                                        .child(Objects.requireNonNull(getIntent().getStringExtra("code")))
+                                        .removeValue();
+                                // TODO: add opponent remove too
                             Intent i = new Intent(GameLogic.this, MainActivity.class);
                             startActivity(i);
                             finish();
@@ -238,6 +249,8 @@ public class GameLogic extends AppCompatActivity
             findViewById(R.id.t2).setVisibility(View.VISIBLE);
             findViewById(R.id.t1).setVisibility(View.INVISIBLE);
         }
+
+        runOnUiThread(() -> AlertWin(cells, grid));
 
         return !turn;
     }
