@@ -1,54 +1,55 @@
 package io.gattopandacorno.onlinetictactoe;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
-import android.content.Context;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothClass;
+import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.net.wifi.p2p.WifiP2pConfig;
-import android.net.wifi.p2p.WifiP2pDevice;
-import android.net.wifi.p2p.WifiP2pDeviceList;
-import android.net.wifi.p2p.WifiP2pManager;
-import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Looper;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Objects;
+
 
 public class GameLogic extends AppCompatActivity
 {
 
     // Store all the combination to win; horizontals, verticals, diagonals
     private final int[][] winComb = {{0, 1, 2}, {3, 4, 5}, {6, 7, 8},
-                                     {0, 3, 6}, {1, 4, 7}, {2, 5, 8},
-                                     {0, 4, 8}, {2, 4, 6}};
+            {0, 3, 6}, {1, 4, 7}, {2, 5, 8},
+            {0, 4, 8}, {2, 4, 6}};
 
     // Store the situation in the game; 0 = not used, 1 = x, 2 = o
     private final int[] grid = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     private boolean turn = true;
 
-    WifiP2pManager mng;
-    WifiP2pManager.Channel channel;
-    Wifip2pReceiver receiver;
-    IntentFilter fil = new IntentFilter();
 
-    @SuppressLint({"SetTextI18n", "UseCompatLoadingForDrawables", "ClickableViewAccessibility"})
+    private final BluetoothReceiver bReceiver = new BluetoothReceiver();
+    private BluetoothAdapter bAdapter;
+    private IntentFilter fil;
+    private BluetoothDevice dev;
+    private BluetoothConnection bConnection;
+
+
+    @RequiresApi(api = Build.VERSION_CODES.S)
+    @SuppressLint({"SetTextI18n", "UseCompatLoadingForDrawables", "ClickableViewAccessibility", "MissingPermission"})
     @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.gameboard);
 
@@ -57,23 +58,28 @@ public class GameLogic extends AppCompatActivity
         findViewById(R.id.t2).setVisibility(View.INVISIBLE);
 
         ImageView[] cells = {findViewById(R.id.i0), findViewById(R.id.i1), findViewById(R.id.i2),
-                            findViewById(R.id.i3), findViewById(R.id.i4), findViewById(R.id.i5),
-                            findViewById(R.id.i6), findViewById(R.id.i7), findViewById(R.id.i8)};
+                findViewById(R.id.i3), findViewById(R.id.i4), findViewById(R.id.i5),
+                findViewById(R.id.i6), findViewById(R.id.i7), findViewById(R.id.i8)};
+
+        bAdapter = BluetoothAdapter.getDefaultAdapter();
+        fil = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+
+        registerReceiver(bReceiver, fil);
 
         // If the game mode is local
-        if(!getIntent().getBooleanExtra("online", false))
+        if (!getIntent().getBooleanExtra("online", false))
         {
             tp1.setText(getIntent().getStringExtra("playerName1"));
             tp2.setText(getIntent().getStringExtra("playerName2"));
 
-            for(int i=0; i<9; i++)
+            for (int i = 0; i < 9; i++)
             {
                 int j = i;
                 cells[i].setOnTouchListener((v, event) -> {
                     // Only if the image/cell is touched AND it is not occupied
-                    if(event.getAction() == MotionEvent.ACTION_DOWN && grid[j]==0)
+                    if (event.getAction() == MotionEvent.ACTION_DOWN && grid[j] == 0)
                     {
-                        if(turn)
+                        if (turn)
                         {
                             cells[j].setImageDrawable(getDrawable(R.drawable.x));
                             grid[j] = 1;
@@ -104,28 +110,22 @@ public class GameLogic extends AppCompatActivity
         // If the game mode is online
         else
         {
-            mng      = (WifiP2pManager) getApplicationContext().getSystemService(Context.WIFI_P2P_SERVICE);
-            channel  = mng.initialize(this, Looper.getMainLooper(), () -> Log.d("WIFIP2P", "Channel disconnected"));
-            receiver = new Wifip2pReceiver(mng, channel, GameLogic.this);
+            //loading bar + thread with pairing device
+            Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+            discoverableIntent.addCategory(BluetoothAdapter.ACTION_REQUEST_ENABLE);
 
-            String code = getIntent().getStringExtra("code");
-            WifiP2pConfig config = new WifiP2pConfig.Builder().setNetworkName("DIRECT-"+code).setPassphrase(code).build();
-            config.groupOwnerIntent = 15;  //Value between 0-15
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 0);
+            startActivityForResult(discoverableIntent, 255);
+            bConnection = new BluetoothConnection(this, Objects.requireNonNull(getIntent().getStringExtra("code")));
+
+            //once paired the game room unlocks with name of players
+
+            new Thread(() -> playgame(cells));
 
 
-            new Thread(() -> {
-                if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == 0)
-                {
-                    mng.createGroup(channel, config, new WifiP2pManager.ActionListener() {
-                        @Override
-                        public void onSuccess() {Log.d("WIFIP2P", "Group created");}
 
-                        @Override
-                        public void onFailure(int reason) { Log.d("WIFIP2P", "creating group failed " + reason);}
-                    });
-                }
-            }).start();
         }
+
 
 
         //Setting click listener for when reset/play again button is clicked
@@ -147,13 +147,12 @@ public class GameLogic extends AppCompatActivity
                 new AlertDialog.Builder(GameLogic.this)
                         .setMessage("Are you sure you want to leave the game?")
                         .setNegativeButton("ok", (dialog, which) -> {
-                            // TODO: remove the room if it was an online game
-                            //mng.removeGroup();
+                            // TODO: remove the room if it was an online
+                            unregisterReceiver(bReceiver);
                             Intent i = new Intent(GameLogic.this, MainActivity.class);
                             startActivity(i);
                             finish();
-                        })
-                        .show();
+                        }).show();
             }
         });
     }
@@ -163,10 +162,10 @@ public class GameLogic extends AppCompatActivity
      * If in the grid there is a winning combination it returns the value of the winner; 1 = x, 2 = o
      * Otherwise it returns 0
      */
-    private int Win(int[]grid)
+    private int Win(int[] grid)
     {
-        for(int i=0; i<9; i++)
-            if(grid[winComb[i][0]] == grid[winComb[i][1]]  && grid[winComb[i][1]] == grid[winComb[i][2]])
+        for (int i = 0; i < 9; i++)
+            if (grid[winComb[i][0]] == grid[winComb[i][1]] && grid[winComb[i][1]] == grid[winComb[i][2]])
                 return grid[winComb[i][0]];
 
         return 0;
@@ -183,7 +182,7 @@ public class GameLogic extends AppCompatActivity
         findViewById(R.id.t1).setVisibility(View.VISIBLE);
         findViewById(R.id.t2).setVisibility(View.INVISIBLE);
 
-        for(int i=0; i<9; i++)
+        for (int i = 0; i < 9; i++)
         {
             c[i].setImageDrawable(getDrawable(R.drawable.ic_launcher_background));
             grid[i] = 0;
@@ -195,7 +194,7 @@ public class GameLogic extends AppCompatActivity
     {
         int w = Win(grid);
 
-        if(w == 1) // If the winner is the one with the X
+        if (w == 1) // If the winner is the one with the X
             new AlertDialog.Builder(this).
                     setMessage(getIntent().getStringExtra("playerName1") + " WON THE GAME").
                     setPositiveButton("play again", (dialog, which) -> reset(c))
@@ -208,17 +207,119 @@ public class GameLogic extends AppCompatActivity
                     .show();
     }
 
-    @Override
-    protected void onPause()
+    private void WaitOpponent()
     {
-        super.onPause();
-        unregisterReceiver(receiver);
+        runOnUiThread(() -> {
+            ProgressBar pb = new ProgressBar(GameLogic.this);
+            pb.setIndeterminate(true);
+            pb.setPadding(0, 0, 30, 0);
+            pb.setLayoutParams(new ViewGroup.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+            new AlertDialog.Builder(GameLogic.this).setCancelable(false).setView(pb).setMessage("Searching opponent...").create().show();
+        });
+
     }
 
+
     @Override
-    protected void onResume()
+    protected void onStart()
     {
-        super.onResume();
-        registerReceiver(receiver, fil);
+        super.onStart();
+
+        if(!bAdapter.isEnabled())
+        {
+            Log.d("SOCKET", "enableDisableBT: enabling BT.");
+
+            fil = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+            registerReceiver(bReceiver, fil);
+        }
+    }
+
+
+    @SuppressLint("MissingPermission")
+    @Override
+    protected void onDestroy()
+    {
+        super.onDestroy();
+        if(getIntent().getBooleanExtra("online", false))
+        {
+            unregisterReceiver(bReceiver);
+            if(bAdapter != null) bAdapter.disable();
+            bAdapter = null;
+        }
+    }
+
+    @SuppressLint({"MissingPermission", "ClickableViewAccessibility", "UseCompatLoadingForDrawables"})
+    private void playgame(ImageView[] cells)
+    {
+        discover();
+       //bAdapter.cancelDiscovery();
+       bConnection.start();
+        runOnUiThread(() -> bConnection.startClient(dev));
+
+
+        /**
+        while (Win(grid) == 0)
+        {
+            AtomicBoolean turnTaken = new AtomicBoolean(false);
+            for (int i = 0; i < 9; i++)
+            {
+                int j = i;
+                cells[i].setOnTouchListener((v, event) -> {
+                    // Only if the image/cell is touched AND it is not occupied
+                    if (event.getAction() == MotionEvent.ACTION_DOWN && grid[j] == 0)
+                    {
+                        if (turn)
+                        {
+                            cells[j].setImageDrawable(getDrawable(R.drawable.x));
+                            grid[j] = 1;
+
+                            //send data
+                            bConnection.write(String.valueOf(j).getBytes());
+                            turn = false;
+                            turnTaken.set(true);
+
+                            findViewById(R.id.t2).setVisibility(View.VISIBLE);
+                            findViewById(R.id.t1).setVisibility(View.INVISIBLE);
+                        }
+
+                        else
+                        {
+
+                            if (turnTaken.get())
+                            {
+                                try {String readMsg = bConnection.read();}
+                                catch (Exception e) {turnTaken.set(true);}
+
+                                cells[j].setImageDrawable(getDrawable(R.drawable.o));
+                                grid[j] = 2;
+
+                                turn = true;
+                                turnTaken.set(false);
+                            }
+
+                            findViewById(R.id.t1).setVisibility(View.VISIBLE);
+                            findViewById(R.id.t2).setVisibility(View.INVISIBLE);
+                        }
+
+                        //new Thread(() -> {new Handler().post(() -> {AlertWin(cells, grid);});}).start();
+                        turn = !turn;
+                        return true;
+                    }
+
+                    return false;
+                });
+            }
+        }
+         */
+    }
+
+    @SuppressLint("MissingPermission")
+    public void discover()
+    {
+        Log.d("SOCKET", "Looking for unpaired devices.");
+
+        bAdapter.startDiscovery();
+
     }
 }
