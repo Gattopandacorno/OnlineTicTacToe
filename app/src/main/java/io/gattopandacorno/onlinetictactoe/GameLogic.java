@@ -29,6 +29,9 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.UUID;
 
+import java.util.Collections;
+import java.util.Objects;
+
 
 public class GameLogic extends AppCompatActivity
 {
@@ -42,6 +45,7 @@ public class GameLogic extends AppCompatActivity
     private final int[] grid = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     private boolean turn = true;
+    int pl; // pl is the value used to distinguish player1 from player2
 
 
     private final BluetoothReceiver bReceiver = new BluetoothReceiver();
@@ -56,7 +60,7 @@ public class GameLogic extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.gameboard);
-
+        
         TextView tp1 = findViewById(R.id.tp1), tp2 = findViewById(R.id.tp2);
         findViewById(R.id.t1).setVisibility(View.VISIBLE);
         findViewById(R.id.t2).setVisibility(View.INVISIBLE);
@@ -105,6 +109,10 @@ public class GameLogic extends AppCompatActivity
                         }
 
 
+                        // Create a thread to control if somebody win
+                        // Thread cannot be used because after calling Win it shows an alert dialog
+                        runOnUiThread(() -> AlertWin(cells, grid));
+                        
                         turn = !turn;
                         return true;
                     }
@@ -148,6 +156,7 @@ public class GameLogic extends AppCompatActivity
             Intent i = new Intent(this, MainActivity.class);
 
             startActivity(i); //Return to home view
+
             finish();
         });
 
@@ -159,8 +168,10 @@ public class GameLogic extends AppCompatActivity
                 new AlertDialog.Builder(GameLogic.this)
                         .setMessage("Are you sure you want to leave the game?")
                         .setNegativeButton("ok", (dialog, which) -> {
+
                             // TODO: remove the room if it was an online
                             unregisterReceiver(bReceiver);
+
                             Intent i = new Intent(GameLogic.this, MainActivity.class);
                             startActivity(i);
                             finish();
@@ -176,8 +187,9 @@ public class GameLogic extends AppCompatActivity
      */
     private int Win(int[] grid)
     {
-        for (int i = 0; i < 9; i++)
-            if (grid[winComb[i][0]] == grid[winComb[i][1]] && grid[winComb[i][1]] == grid[winComb[i][2]])
+        for(int i=0; i<8; i++)
+            if(grid[winComb[i][0]] == grid[winComb[i][1]]  && grid[winComb[i][1]] == grid[winComb[i][2]])
+
                 return grid[winComb[i][0]];
 
         return 0;
