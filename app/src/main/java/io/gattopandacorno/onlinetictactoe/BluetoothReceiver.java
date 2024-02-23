@@ -29,16 +29,16 @@ public class BluetoothReceiver extends BroadcastReceiver
                 // Discovery has found a device. Get the BluetoothDevice
                 BluetoothDevice dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
-
-                if(dev != null && dev.getName() != null)
-                    Log.d("SOCKET", "found device " + dev.getName());
-
-                if(dev != null &&  dev.fetchUuidsWithSdp())
+                if(dev != null && dev.getName() != null && Objects.equals(dev.getName(), "HT"))
                 {
+                    Log.d("SOCKET", "found device " + dev.getName());
+                    dev.createBond();
 
-                    Log.d("SOCKET", String.valueOf(dev.getUuids()[0].getUuid()));
+                    Intent local = new Intent();
+                    local.setAction("service.to.activity.transfer");
+                    local.putExtra("device", dev);
+                    context.sendBroadcast(local);
                 }
-
 
 
                 break;
@@ -50,12 +50,15 @@ public class BluetoothReceiver extends BroadcastReceiver
                     case BluetoothAdapter.STATE_OFF:
                         Log.d("SOCKET", "STATE OFF");
                         break;
+
                     case BluetoothAdapter.STATE_TURNING_OFF:
                         Log.d("SOCKET", "STATE TURNING OFF");
                         break;
+
                     case BluetoothAdapter.STATE_ON:
                         Log.d("SOCKET", "STATE ON");
                         break;
+
                     case BluetoothAdapter.STATE_TURNING_ON:
                         Log.d("SOCKET", "STATE TURNING ON");
                         break;
@@ -69,18 +72,34 @@ public class BluetoothReceiver extends BroadcastReceiver
                     case BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE:
                         Log.d("SOCKET", "Discoverability Enabled.");
                         break;
+
                     //Device not in discoverable mode
                     case BluetoothAdapter.SCAN_MODE_CONNECTABLE:
                         Log.d("SOCKET", "Discoverability Disabled. Able to receive connections.");
                         break;
+
                     case BluetoothAdapter.SCAN_MODE_NONE:
                         Log.d("SOCKET", "Discoverability Disabled. Not able to receive connections.");
                         break;
+
                     case BluetoothAdapter.STATE_CONNECTING:
                         Log.d("SOCKET", "Connecting....");
                         break;
+
                     case BluetoothAdapter.STATE_CONNECTED:
                         Log.d("SOCKET", "Connected.");
+                        break;
+                }
+
+            case BluetoothDevice.ACTION_BOND_STATE_CHANGED:
+                switch (intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, 10))
+                {
+                    case BluetoothDevice.BOND_BONDING:
+                        Log.d("SOCKET", "bonding");
+                        break;
+
+                    case BluetoothDevice.BOND_BONDED:
+                        Log.d("SOCKET", "bonded");
                         break;
                 }
 

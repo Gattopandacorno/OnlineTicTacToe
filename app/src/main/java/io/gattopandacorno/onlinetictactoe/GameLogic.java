@@ -69,6 +69,7 @@ public class GameLogic extends AppCompatActivity
 
         fil = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         fil.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
+        fil.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
 
         registerReceiver(bReceiver, fil);
 
@@ -133,7 +134,8 @@ public class GameLogic extends AppCompatActivity
         // If the game mode is online
         else
         {
-            Client();
+            try {Client();}
+            catch (IOException e) {Log.e("SOCKET", String.valueOf(e));}
         }
 
 
@@ -271,9 +273,9 @@ public class GameLogic extends AppCompatActivity
 
 
     @SuppressLint("MissingPermission")
-    private void Client()
+    private void Client() throws IOException
     {
-        Log.d("SOCKET", "client method started");
-        bAdapter.startDiscovery();
+            Log.d("SOCKET", "client method started");
+            bAdapter.startDiscovery();
     }
 }
