@@ -7,6 +7,7 @@ import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.EditText;
@@ -18,7 +19,7 @@ public class Login extends AppCompatActivity
 {
 
 
-    @SuppressLint({"SetTextI18n", "NewApi"})
+    @SuppressLint({"SetTextI18n", "NewApi", "MissingPermission"})
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {

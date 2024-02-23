@@ -28,9 +28,18 @@ public class BluetoothReceiver extends BroadcastReceiver
 
                 // Discovery has found a device. Get the BluetoothDevice
                 BluetoothDevice dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                UUID uuid =  UUID.nameUUIDFromBytes(intent.getStringExtra("code").getBytes());
 
-                if(dev != null) Log.d("SOCKET", dev.getAddress());
+
+                if(dev != null && dev.getName() != null)
+                    Log.d("SOCKET", "found device " + dev.getName());
+
+                if(dev != null &&  dev.fetchUuidsWithSdp())
+                {
+
+                    Log.d("SOCKET", String.valueOf(dev.getUuids()[0].getUuid()));
+                }
+
+
 
                 break;
 

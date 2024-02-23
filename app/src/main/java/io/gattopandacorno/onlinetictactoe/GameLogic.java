@@ -3,8 +3,11 @@ package io.gattopandacorno.onlinetictactoe;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothServerSocket;
+import android.bluetooth.BluetoothSocket;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
@@ -22,7 +25,9 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.IOException;
 import java.util.Objects;
+import java.util.UUID;
 
 
 public class GameLogic extends AppCompatActivity
@@ -46,7 +51,6 @@ public class GameLogic extends AppCompatActivity
     private BluetoothConnection bConnection;
 
 
-    @RequiresApi(api = Build.VERSION_CODES.S)
     @SuppressLint({"SetTextI18n", "UseCompatLoadingForDrawables", "ClickableViewAccessibility", "MissingPermission"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,8 +65,10 @@ public class GameLogic extends AppCompatActivity
                 findViewById(R.id.i3), findViewById(R.id.i4), findViewById(R.id.i5),
                 findViewById(R.id.i6), findViewById(R.id.i7), findViewById(R.id.i8)};
 
-        bAdapter = BluetoothAdapter.getDefaultAdapter();
+        bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
+
         fil = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        fil.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
 
         registerReceiver(bReceiver, fil);
 
@@ -97,7 +103,7 @@ public class GameLogic extends AppCompatActivity
                             findViewById(R.id.t2).setVisibility(View.INVISIBLE);
                         }
 
-                        //new Thread(() -> {new Handler().post(() -> {AlertWin(cells, grid);});}).start();
+
                         turn = !turn;
                         return true;
                     }
@@ -107,23 +113,27 @@ public class GameLogic extends AppCompatActivity
             }
         }
 
+        else if(getIntent().getBooleanExtra("host", false))
+        {
+            Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+            bAdapter.setName("HT");
+
+            bConnection = new BluetoothConnection(this, Objects.requireNonNull(getIntent().getStringExtra("code")));
+
+            startActivity(discoverableIntent);
+            new Thread(() -> {
+                try {Server();}
+                catch (IOException e) {Log.e("SOCKET", String.valueOf(e));}
+            });
+
+        }
+
         // If the game mode is online
         else
         {
-            //loading bar + thread with pairing device
-            Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-            discoverableIntent.addCategory(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-
-            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 0);
-            startActivityForResult(discoverableIntent, 255);
-            bConnection = new BluetoothConnection(this, Objects.requireNonNull(getIntent().getStringExtra("code")));
-
-            //once paired the game room unlocks with name of players
-
-            new Thread(() -> playgame(cells));
-
-
-
+            Client();
         }
 
 
@@ -221,20 +231,17 @@ public class GameLogic extends AppCompatActivity
     }
 
 
+    @SuppressLint("MissingPermission")
     @Override
     protected void onStart()
     {
         super.onStart();
-
-        if(!bAdapter.isEnabled())
+        if (!bAdapter.isEnabled())
         {
-            Log.d("SOCKET", "enableDisableBT: enabling BT.");
-
-            fil = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-            registerReceiver(bReceiver, fil);
+            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivity(enableIntent);
         }
     }
-
 
     @SuppressLint("MissingPermission")
     @Override
@@ -249,77 +256,24 @@ public class GameLogic extends AppCompatActivity
         }
     }
 
-    @SuppressLint({"MissingPermission", "ClickableViewAccessibility", "UseCompatLoadingForDrawables"})
-    private void playgame(ImageView[] cells)
-    {
-        discover();
-       //bAdapter.cancelDiscovery();
-       bConnection.start();
-        runOnUiThread(() -> bConnection.startClient(dev));
-
-
-        /**
-        while (Win(grid) == 0)
-        {
-            AtomicBoolean turnTaken = new AtomicBoolean(false);
-            for (int i = 0; i < 9; i++)
-            {
-                int j = i;
-                cells[i].setOnTouchListener((v, event) -> {
-                    // Only if the image/cell is touched AND it is not occupied
-                    if (event.getAction() == MotionEvent.ACTION_DOWN && grid[j] == 0)
-                    {
-                        if (turn)
-                        {
-                            cells[j].setImageDrawable(getDrawable(R.drawable.x));
-                            grid[j] = 1;
-
-                            //send data
-                            bConnection.write(String.valueOf(j).getBytes());
-                            turn = false;
-                            turnTaken.set(true);
-
-                            findViewById(R.id.t2).setVisibility(View.VISIBLE);
-                            findViewById(R.id.t1).setVisibility(View.INVISIBLE);
-                        }
-
-                        else
-                        {
-
-                            if (turnTaken.get())
-                            {
-                                try {String readMsg = bConnection.read();}
-                                catch (Exception e) {turnTaken.set(true);}
-
-                                cells[j].setImageDrawable(getDrawable(R.drawable.o));
-                                grid[j] = 2;
-
-                                turn = true;
-                                turnTaken.set(false);
-                            }
-
-                            findViewById(R.id.t1).setVisibility(View.VISIBLE);
-                            findViewById(R.id.t2).setVisibility(View.INVISIBLE);
-                        }
-
-                        //new Thread(() -> {new Handler().post(() -> {AlertWin(cells, grid);});}).start();
-                        turn = !turn;
-                        return true;
-                    }
-
-                    return false;
-                });
-            }
-        }
-         */
-    }
 
     @SuppressLint("MissingPermission")
-    public void discover()
+    private void Server() throws IOException
     {
-        Log.d("SOCKET", "Looking for unpaired devices.");
+        Log.d("SOCKET", "Server method started");
+        BluetoothServerSocket bServer = bAdapter.listenUsingRfcommWithServiceRecord("trisonline", UUID.nameUUIDFromBytes("proviamo".getBytes()));
+        BluetoothSocket bSocket = bServer.accept();
 
+        if (bSocket!= null) bServer.close(); // After accepting a connection (only two player!)
+
+    }
+
+
+
+    @SuppressLint("MissingPermission")
+    private void Client()
+    {
+        Log.d("SOCKET", "client method started");
         bAdapter.startDiscovery();
-
     }
 }
