@@ -2,25 +2,32 @@ package io.gattopandacorno.onlinetictactoe;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothServerSocket;
+import android.bluetooth.BluetoothSocket;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.Firebase;
-import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import java.io.IOException;
+import java.util.Objects;
+import java.util.UUID;
 
 import java.util.Collections;
 import java.util.Objects;
@@ -31,8 +38,8 @@ public class GameLogic extends AppCompatActivity
 
     // Store all the combination to win; horizontals, verticals, diagonals
     private final int[][] winComb = {{0, 1, 2}, {3, 4, 5}, {6, 7, 8},
-                                     {0, 3, 6}, {1, 4, 7}, {2, 5, 8},
-                                     {0, 4, 8}, {2, 4, 6}};
+            {0, 3, 6}, {1, 4, 7}, {2, 5, 8},
+            {0, 4, 8}, {2, 4, 6}};
 
     // Store the situation in the game; 0 = not used, 1 = x, 2 = o
     private final int[] grid = {0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -40,34 +47,49 @@ public class GameLogic extends AppCompatActivity
     private boolean turn = true;
     int pl; // pl is the value used to distinguish player1 from player2
 
-    @SuppressLint({"SetTextI18n", "UseCompatLoadingForDrawables", "ClickableViewAccessibility"})
+
+    private final BluetoothReceiver bReceiver = new BluetoothReceiver();
+    private BluetoothAdapter bAdapter;
+    private IntentFilter fil;
+    private BluetoothDevice dev;
+    private BluetoothConnection bConnection;
+
+
+    @SuppressLint({"SetTextI18n", "UseCompatLoadingForDrawables", "ClickableViewAccessibility", "MissingPermission"})
     @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.gameboard);
+        
         TextView tp1 = findViewById(R.id.tp1), tp2 = findViewById(R.id.tp2);
         findViewById(R.id.t1).setVisibility(View.VISIBLE);
         findViewById(R.id.t2).setVisibility(View.INVISIBLE);
 
         ImageView[] cells = {findViewById(R.id.i0), findViewById(R.id.i1), findViewById(R.id.i2),
-                            findViewById(R.id.i3), findViewById(R.id.i4), findViewById(R.id.i5),
-                            findViewById(R.id.i6), findViewById(R.id.i7), findViewById(R.id.i8)};
+                findViewById(R.id.i3), findViewById(R.id.i4), findViewById(R.id.i5),
+                findViewById(R.id.i6), findViewById(R.id.i7), findViewById(R.id.i8)};
+
+        bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
+
+        fil = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        fil.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
+
+        registerReceiver(bReceiver, fil);
 
         // If the game mode is local
-        if(!getIntent().getBooleanExtra("online", false))
+        if (!getIntent().getBooleanExtra("online", false))
         {
             tp1.setText(getIntent().getStringExtra("playerName1"));
             tp2.setText(getIntent().getStringExtra("playerName2"));
 
-            for(int i=0; i<9; i++)
+            for (int i = 0; i < 9; i++)
             {
                 int j = i;
                 cells[i].setOnTouchListener((v, event) -> {
                     // Only if the image/cell is touched AND it is not occupied
-                    if(event.getAction() == MotionEvent.ACTION_DOWN && grid[j]==0)
+                    if (event.getAction() == MotionEvent.ACTION_DOWN && grid[j] == 0)
                     {
-                        if(turn)
+                        if (turn)
                         {
                             cells[j].setImageDrawable(getDrawable(R.drawable.x));
                             grid[j] = 1;
@@ -85,9 +107,11 @@ public class GameLogic extends AppCompatActivity
                             findViewById(R.id.t2).setVisibility(View.INVISIBLE);
                         }
 
+
                         // Create a thread to control if somebody win
                         // Thread cannot be used because after calling Win it shows an alert dialog
                         runOnUiThread(() -> AlertWin(cells, grid));
+                        
                         turn = !turn;
                         return true;
                     }
@@ -97,42 +121,29 @@ public class GameLogic extends AppCompatActivity
             }
         }
 
-        // If the game mode is online
-        else
+        else if(getIntent().getBooleanExtra("host", false))
         {
-            String code = getIntent().getStringExtra("code");
+            Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
 
-            assert code != null;
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+            bAdapter.setName("HT");
 
-            DatabaseReference db = FirebaseDatabase.getInstance().getReference()
-                    .child("codes").child(code);
-            //db.child("data").push().setValue(Collections.singletonList(grid));
+            bConnection = new BluetoothConnection(this, Objects.requireNonNull(getIntent().getStringExtra("code")));
 
-            db.child("data").addChildEventListener(new ChildEventListener() {
-                @Override
-                public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {}
-
-                @Override
-                public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName)
-                {
-                    turn = moveOnline(snapshot, turn, cells);
-                    db.child("data").push().setValue(grid);
-                }
-
-                @Override
-                public void onChildRemoved(@NonNull DataSnapshot snapshot)
-                {
-                    reset(cells);
-                }
-
-                @Override
-                public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {}
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {Log.d("DB", "on cancelled data " + error);}
+            startActivity(discoverableIntent);
+            new Thread(() -> {
+                try {Server();}
+                catch (IOException e) {Log.e("SOCKET", String.valueOf(e));}
             });
 
         }
+
+        // If the game mode is online
+        else
+        {
+            Client();
+        }
+
 
 
         //Setting click listener for when reset/play again button is clicked
@@ -142,13 +153,8 @@ public class GameLogic extends AppCompatActivity
         findViewById(R.id.home).setOnClickListener(v -> {
             Intent i = new Intent(this, MainActivity.class);
 
-            if(getIntent().getBooleanExtra("online", false))
-                FirebaseDatabase.getInstance()
-                        .getReference().child("codes")
-                        .child(Objects.requireNonNull(getIntent().getStringExtra("code")))
-                        .removeValue();
+            startActivity(i); //Return to home view
 
-            startActivity(i); //Return to home view called activity_main
             finish();
         });
 
@@ -160,16 +166,14 @@ public class GameLogic extends AppCompatActivity
                 new AlertDialog.Builder(GameLogic.this)
                         .setMessage("Are you sure you want to leave the game?")
                         .setNegativeButton("ok", (dialog, which) -> {
-                            if(getIntent().getBooleanExtra("online", false))
-                                FirebaseDatabase.getInstance().getReference().child("codes")
-                                        .child(Objects.requireNonNull(getIntent().getStringExtra("code")))
-                                        .removeValue();
-                                // TODO: add opponent remove too
+
+                            // TODO: remove the room if it was an online
+                            unregisterReceiver(bReceiver);
+
                             Intent i = new Intent(GameLogic.this, MainActivity.class);
                             startActivity(i);
                             finish();
-                        })
-                        .show();
+                        }).show();
             }
         });
     }
@@ -183,6 +187,7 @@ public class GameLogic extends AppCompatActivity
     {
         for(int i=0; i<8; i++)
             if(grid[winComb[i][0]] == grid[winComb[i][1]]  && grid[winComb[i][1]] == grid[winComb[i][2]])
+
                 return grid[winComb[i][0]];
 
         return 0;
@@ -198,7 +203,8 @@ public class GameLogic extends AppCompatActivity
         turn = true;
         findViewById(R.id.t1).setVisibility(View.VISIBLE);
         findViewById(R.id.t2).setVisibility(View.INVISIBLE);
-        for(int i=0; i<9; i++)
+
+        for (int i = 0; i < 9; i++)
         {
             c[i].setImageDrawable(getDrawable(R.drawable.ic_launcher_background));
             grid[i] = 0;
@@ -210,7 +216,7 @@ public class GameLogic extends AppCompatActivity
     {
         int w = Win(grid);
 
-        if(w == 1) // If the winner is the one with the X
+        if (w == 1) // If the winner is the one with the X
             new AlertDialog.Builder(this).
                     setMessage(getIntent().getStringExtra("playerName1") + " WON THE GAME").
                     setPositiveButton("play again", (dialog, which) -> reset(c))
@@ -223,35 +229,63 @@ public class GameLogic extends AppCompatActivity
                     .show();
     }
 
-    @SuppressLint("UseCompatLoadingForDrawables")
-    private boolean moveOnline(DataSnapshot data, boolean turn, ImageView[] cells)
+    private void WaitOpponent()
     {
-        int pos = (int) data.getValue();
-        if(turn && grid[pos] == 0)
+        runOnUiThread(() -> {
+            ProgressBar pb = new ProgressBar(GameLogic.this);
+            pb.setIndeterminate(true);
+            pb.setPadding(0, 0, 30, 0);
+            pb.setLayoutParams(new ViewGroup.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+            new AlertDialog.Builder(GameLogic.this).setCancelable(false).setView(pb).setMessage("Searching opponent...").create().show();
+        });
+
+    }
+
+
+    @SuppressLint("MissingPermission")
+    @Override
+    protected void onStart()
+    {
+        super.onStart();
+        if (!bAdapter.isEnabled())
         {
-            if(pl == 1)
-            {
-                cells[pos].setImageDrawable(getDrawable(R.drawable.x));
-                grid[pos] = 1;
-            }
-
-            else
-            {
-                cells[pos].setImageDrawable(getDrawable(R.drawable.o));
-                grid[pos] = 2;
-            }
-
-            findViewById(R.id.t1).setVisibility(View.VISIBLE);
-            findViewById(R.id.t2).setVisibility(View.INVISIBLE);
+            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivity(enableIntent);
         }
-        else
+    }
+
+    @SuppressLint("MissingPermission")
+    @Override
+    protected void onDestroy()
+    {
+        super.onDestroy();
+        if(getIntent().getBooleanExtra("online", false))
         {
-            findViewById(R.id.t2).setVisibility(View.VISIBLE);
-            findViewById(R.id.t1).setVisibility(View.INVISIBLE);
+            unregisterReceiver(bReceiver);
+            if(bAdapter != null) bAdapter.disable();
+            bAdapter = null;
         }
+    }
 
-        runOnUiThread(() -> AlertWin(cells, grid));
 
-        return !turn;
+    @SuppressLint("MissingPermission")
+    private void Server() throws IOException
+    {
+        Log.d("SOCKET", "Server method started");
+        BluetoothServerSocket bServer = bAdapter.listenUsingRfcommWithServiceRecord("trisonline", UUID.nameUUIDFromBytes("proviamo".getBytes()));
+        BluetoothSocket bSocket = bServer.accept();
+
+        if (bSocket!= null) bServer.close(); // After accepting a connection (only two player!)
+
+    }
+
+
+
+    @SuppressLint("MissingPermission")
+    private void Client()
+    {
+        Log.d("SOCKET", "client method started");
+        bAdapter.startDiscovery();
     }
 }
