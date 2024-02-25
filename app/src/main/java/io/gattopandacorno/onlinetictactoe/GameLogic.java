@@ -116,6 +116,7 @@ public class GameLogic extends AppCompatActivity
             }
         }
 
+        // If the game is online and the player is hosting
         else if(getIntent().getBooleanExtra("host", false))
         {
             tp1.setText(getIntent().getStringExtra("playerName1"));
@@ -137,7 +138,7 @@ public class GameLogic extends AppCompatActivity
 
         }
 
-        // If the game mode is online
+        // If the game is online and the player is joining another player (not host)
         else
         {
             tp2.setText(getIntent().getStringExtra("playerName2"));
@@ -177,6 +178,9 @@ public class GameLogic extends AppCompatActivity
      * Control if there is a winner in the game, this is done with the winning combination matrix
      * If in the grid there is a winning combination it returns the value of the winner; 1 = x, 2 = o
      * Otherwise it returns 0
+     *
+     * @param grid Is the numeric representation of the game's situation.
+     *             It is used to better control when a player is winning or not.
      */
     private int Win(int[] grid)
     {
@@ -190,6 +194,8 @@ public class GameLogic extends AppCompatActivity
     /**
      * The reset function is not only used when reset button is clicked
      * but also when the play again 'button' is shown  after a win in the alert dialog
+     *
+     * @param c Is an array of images, represents the board game.
      */
     @SuppressLint("UseCompatLoadingForDrawables")
     private void reset(ImageView[] c)
@@ -205,7 +211,14 @@ public class GameLogic extends AppCompatActivity
         }
     }
 
-    /* If a player wins this function shows an alert message with the winner's name*/
+    /**
+     * If a player wins this function shows an alert message with the winner's name
+     *
+     * @param c Is an array of images, represents the board game.
+     *
+     * @param grid Is the numeric representation of the game's situation.
+     *             It is used to better control when a player is winning or not.
+     * */
     private void AlertWin(ImageView[] c, int[] grid)
     {
         int w = Win(grid);
@@ -253,7 +266,8 @@ public class GameLogic extends AppCompatActivity
     /**
      * Server is the method used by host devices.
      * It starts a BluetoothServerSocket that listen and then accept for one connection (2nd player).
-     * @throws IOException
+     *
+     * @throws IOException When the listRfcommWithServiceRecord is called an exception can be thrown
      */
     @SuppressLint("MissingPermission")
     private void Server() throws IOException
@@ -272,6 +286,8 @@ public class GameLogic extends AppCompatActivity
      * Client is the method used by client devices.
      * Searches all the other near devices with bluetooth on.
      * startDiscovery runs in a separate thread and returns after being called.
+     *
+     * @throws IOException When createRfcommSocketToServiceRecord is called an exception can be thrown.
      */
     @SuppressLint("MissingPermission")
     private void Client() throws IOException
