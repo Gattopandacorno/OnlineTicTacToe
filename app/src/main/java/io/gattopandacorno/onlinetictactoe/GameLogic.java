@@ -205,7 +205,7 @@ public class GameLogic extends AppCompatActivity
 
         for (int i = 0; i < 9; i++)
         {
-            c[i].setImageDrawable(getDrawable(R.drawable.ic_launcher_background));
+            c[i].setImageDrawable(getDrawable(R.drawable.card));
             grid[i] = 0;
         }
     }

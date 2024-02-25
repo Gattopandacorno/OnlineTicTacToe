@@ -86,7 +86,7 @@
                 android:layout_height="108dp"
                 android:layout_marginEnd="@dimen/cardview_default_elevation"
                 android:importantForAccessibility="no"
-                app:srcCompat="@drawable/ic_launcher_background" />
+                app:srcCompat="@drawable/card" />
 
             <ImageView
                 android:id="@+id/i1"
@@ -94,14 +94,14 @@
                 android:layout_height="108dp"
                 android:layout_marginEnd="@dimen/cardview_default_elevation"
                 android:importantForAccessibility="no"
-                app:srcCompat="@drawable/ic_launcher_background" />
+                app:srcCompat="@drawable/card" />
 
             <ImageView
                 android:id="@+id/i2"
                 android:layout_width="108dp"
                 android:layout_height="108dp"
                 android:importantForAccessibility="no"
-                app:srcCompat="@drawable/ic_launcher_background" />
+                app:srcCompat="@drawable/card" />
         </LinearLayout>
 
         <LinearLayout
@@ -116,7 +116,7 @@
                 android:layout_height="108dp"
                 android:layout_marginEnd="@dimen/cardview_default_elevation"
                 android:importantForAccessibility="no"
-                app:srcCompat="@drawable/ic_launcher_background" />
+                app:srcCompat="@drawable/card" />
 
             <ImageView
                 android:id="@+id/i4"
@@ -124,14 +124,14 @@
                 android:layout_height="108dp"
                 android:layout_marginEnd="@dimen/cardview_default_elevation"
                 android:importantForAccessibility="no"
-                app:srcCompat="@drawable/ic_launcher_background" />
+                app:srcCompat="@drawable/card" />
 
             <ImageView
                 android:id="@+id/i5"
                 android:layout_width="108dp"
                 android:layout_height="108dp"
                 android:importantForAccessibility="no"
-                app:srcCompat="@drawable/ic_launcher_background" />
+                app:srcCompat="@drawable/card" />
         </LinearLayout>
 
         <LinearLayout
@@ -145,7 +145,7 @@
                 android:layout_height="108dp"
                 android:layout_marginEnd="@dimen/cardview_default_elevation"
                 android:importantForAccessibility="no"
-                app:srcCompat="@drawable/ic_launcher_background" />
+                app:srcCompat="@drawable/card" />
 
             <ImageView
                 android:id="@+id/i7"
@@ -153,14 +153,14 @@
                 android:layout_height="108dp"
                 android:layout_marginEnd="@dimen/cardview_default_elevation"
                 android:importantForAccessibility="no"
-                app:srcCompat="@drawable/ic_launcher_background" />
+                app:srcCompat="@drawable/card" />
 
             <ImageView
                 android:id="@+id/i8"
                 android:layout_width="108dp"
                 android:layout_height="108dp"
                 android:importantForAccessibility="no"
-                app:srcCompat="@drawable/ic_launcher_background" />
+                app:srcCompat="@drawable/card" />
         </LinearLayout>
 
     </LinearLayout>
