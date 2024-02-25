@@ -45,13 +45,13 @@ public class GameLogic extends AppCompatActivity
     private final BluetoothReceiver bReceiver = new BluetoothReceiver();
     private BluetoothAdapter bAdapter;
     private IntentFilter fil;
-    private BluetoothDevice dev;
     private BluetoothSocket bSocket;
 
 
     @SuppressLint({"SetTextI18n", "UseCompatLoadingForDrawables", "ClickableViewAccessibility", "MissingPermission"})
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.gameboard);
         
@@ -64,7 +64,7 @@ public class GameLogic extends AppCompatActivity
                 findViewById(R.id.i6), findViewById(R.id.i7), findViewById(R.id.i8)};
 
 
-
+        // Add specific action that should be detected by the IntentFilter, useful for the online game
         fil = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         fil.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
         fil.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
@@ -118,11 +118,15 @@ public class GameLogic extends AppCompatActivity
 
         else if(getIntent().getBooleanExtra("host", false))
         {
+            tp1.setText(getIntent().getStringExtra("playerName1"));
+
             bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
 
+            // Ask if the device can be discoverable so it can be found and then paired/connected with the other player
             Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-
             discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+
+            // Set the name for the host player
             bAdapter.setName("HT");
 
             startActivity(discoverableIntent);
@@ -136,9 +140,11 @@ public class GameLogic extends AppCompatActivity
         // If the game mode is online
         else
         {
+            tp2.setText(getIntent().getStringExtra("playerName2"));
             bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
 
-            Client();
+            try {Client();}
+            catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
         }
 
 
@@ -147,13 +153,7 @@ public class GameLogic extends AppCompatActivity
         findViewById(R.id.reset).setOnClickListener(v -> reset(cells));
 
         //Setting click listener when return to home button is clicked
-        findViewById(R.id.home).setOnClickListener(v -> {
-            Intent i = new Intent(this, MainActivity.class);
-
-            startActivity(i); //Return to home view
-
-            finish();
-        });
+        findViewById(R.id.home).setOnClickListener(v -> {returnHome();});
 
         // If the Back button is pressed it shows an Alert, if ok is pressed too it take the players to the MainActivity
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -164,12 +164,10 @@ public class GameLogic extends AppCompatActivity
                         .setMessage("Are you sure you want to leave the game?")
                         .setNegativeButton("ok", (dialog, which) -> {
 
-                            // TODO: remove the room if it was an online
+                            // TODO: remove the room if it was an online game
                             unregisterReceiver(bReceiver);
 
-                            Intent i = new Intent(GameLogic.this, MainActivity.class);
-                            startActivity(i);
-                            finish();
+                           returnHome();
                         }).show();
             }
         });
@@ -252,22 +250,54 @@ public class GameLogic extends AppCompatActivity
     }
 
 
+    /**
+     * Server is the method used by host devices.
+     * It starts a BluetoothServerSocket that listen and then accept for one connection (2nd player).
+     * @throws IOException
+     */
     @SuppressLint("MissingPermission")
     private void Server() throws IOException
     {
         Log.d("SOCKET", "Server method started");
-        BluetoothServerSocket bServer = bAdapter.listenUsingRfcommWithServiceRecord("trisonline", UUID.nameUUIDFromBytes("proviamo".getBytes()));
+        UUID uuid = UUID.nameUUIDFromBytes(getIntent().getStringExtra("code").getBytes());
+
+        // Tris online is the unique UUID for the server
+        BluetoothServerSocket bServer = bAdapter.listenUsingRfcommWithServiceRecord("trisonline", uuid);
         bSocket = bServer.accept();
 
         if (bSocket!= null) bServer.close(); // After accepting a connection (only two player!)
-
     }
 
+    /**
+     * Client is the method used by client devices.
+     * Searches all the other near devices with bluetooth on.
+     * startDiscovery runs in a separate thread and returns after being called.
+     */
     @SuppressLint("MissingPermission")
-    private void Client()
+    private void Client() throws IOException
     {
         Log.d("SOCKET", "client method started");
+        UUID uuid = UUID.nameUUIDFromBytes(getIntent().getStringExtra("code").getBytes());
+
         bAdapter.startDiscovery();
-        dev = bReceiver.dev;
+        BluetoothDevice dev = bReceiver.dev;
+        try {
+            bSocket = dev.createRfcommSocketToServiceRecord(uuid);
+            bSocket.connect();
+        }
+        catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
+    }
+
+    /**
+     * This method was created to not repeat the same code for the home button and the back pressed.
+     * As the name suggest start the activity to return in the Home view (MainActivity).
+     */
+    private void returnHome()
+    {
+        Intent i = new Intent(this, MainActivity.class);
+
+        startActivity(i); //Return to home view
+
+        finish();
     }
 }

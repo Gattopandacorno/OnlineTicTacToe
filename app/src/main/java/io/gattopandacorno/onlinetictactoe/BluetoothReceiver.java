@@ -36,17 +36,10 @@ public class BluetoothReceiver extends BroadcastReceiver
                 // Discovery has found a device. Get the BluetoothDevice
                 dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
-                // TODO: It should be more generalized with the code
                 if(dev != null && dev.getName().equals("HT"))
                 {
                     Log.d("SOCKET", "found device " + dev.getName());
                     dev.createBond();
-
-                    try {
-                        bSocket = dev.createRfcommSocketToServiceRecord(UUID.nameUUIDFromBytes("proviamo".getBytes()));
-                        bSocket.connect();
-                    }
-                    catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
                 }
 
                 break;

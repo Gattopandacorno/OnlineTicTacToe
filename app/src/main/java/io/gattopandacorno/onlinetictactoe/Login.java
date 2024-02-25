@@ -1,13 +1,11 @@
 package io.gattopandacorno.onlinetictactoe;
 
 import androidx.activity.OnBackPressedCallback;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.EditText;
@@ -17,8 +15,6 @@ import android.widget.Toast;
 
 public class Login extends AppCompatActivity
 {
-
-
     @SuppressLint({"SetTextI18n", "NewApi", "MissingPermission"})
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -66,7 +62,7 @@ public class Login extends AppCompatActivity
 
                         String c = code.getText().toString();
 
-                        // If the code 'c' is not empty, exists and there is only one player (the host) in the game
+                        // If the code 'c' is not empty
                         if (!c.isEmpty()) {
                             if (!t.getText().toString().isEmpty())
                                 i.putExtra("playerName1", t.getText().toString());
@@ -80,7 +76,6 @@ public class Login extends AppCompatActivity
                             finish();
                         }
 
-                        // If 'c' not exists, is empty or the game room is already full (two players)
                         else
                             Toast.makeText(Login.this, "Enter a valid code", Toast.LENGTH_SHORT).show();
             });
@@ -90,7 +85,7 @@ public class Login extends AppCompatActivity
 
                 String c = code.getText().toString();
 
-                // If the code 'c' is not empty, exists and there is only one player (the host) in the game
+                //If the code is not empty
                 if (!c.isEmpty())
                 {
                     if (!t.getText().toString().isEmpty())
@@ -105,7 +100,6 @@ public class Login extends AppCompatActivity
                     finish();
                 }
 
-                // If 'c' not exists, is empty or the game room is already full (two players)
                 else
                     Toast.makeText(Login.this, "Enter a valid code", Toast.LENGTH_SHORT).show();
 
