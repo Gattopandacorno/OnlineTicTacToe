@@ -32,12 +32,7 @@ public class MainActivity extends AppCompatActivity
 
         // Set click listener for when Play local game button is touched
         findViewById(R.id.localButton).setOnClickListener(v->{
-            Intent i = new Intent(this, Login.class);
-
-            i.putExtra("online", false);
-
-            startActivity(i); //Start the activity with the name form before playing
-            finish();
+            startLogin(false);
         });
 
         // Set click listener for when Play multiplayer game button is touched
@@ -56,11 +51,7 @@ public class MainActivity extends AppCompatActivity
 
             else
             {
-                Intent i = new Intent(this, Login.class);
-                i.putExtra("online", true);
-
-                startActivity(i); //Start the activity with the name+join/host form before playing
-                finish();
+                startLogin(true);
             }
 
 
@@ -74,11 +65,23 @@ public class MainActivity extends AppCompatActivity
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode == 255 && resultCode != 0)
         {
-            Intent i = new Intent(this, Login.class);
-            i.putExtra("online", true);
-
-            startActivity(i); //Start the activity with the name+join/host form before playing
-            finish();
+           startLogin(true);
         }
+    }
+
+
+    /**
+     * This method was created to not repeat the same code for online and local game.
+     * Start the activity Login and put an extra boolean param to the intent, this is made to distinguish
+     * when the user clicked online or local button.
+     * @param online
+     */
+    private void startLogin(boolean online)
+    {
+        Intent i = new Intent(this, Login.class);
+        i.putExtra("online", online);
+
+        startActivity(i); //Start the Login activity
+        finish();
     }
 }
