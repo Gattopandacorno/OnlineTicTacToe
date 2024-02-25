@@ -10,7 +10,6 @@ import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -22,15 +21,11 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.UUID;
 
-import java.util.Collections;
-import java.util.Objects;
 
 
 public class GameLogic extends AppCompatActivity
@@ -45,14 +40,13 @@ public class GameLogic extends AppCompatActivity
     private final int[] grid = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     private boolean turn = true;
-    int pl; // pl is the value used to distinguish player1 from player2
 
 
     private final BluetoothReceiver bReceiver = new BluetoothReceiver();
     private BluetoothAdapter bAdapter;
     private IntentFilter fil;
     private BluetoothDevice dev;
-    private BluetoothConnection bConnection;
+    private BluetoothSocket bSocket;
 
 
     @SuppressLint({"SetTextI18n", "UseCompatLoadingForDrawables", "ClickableViewAccessibility", "MissingPermission"})
@@ -69,10 +63,11 @@ public class GameLogic extends AppCompatActivity
                 findViewById(R.id.i3), findViewById(R.id.i4), findViewById(R.id.i5),
                 findViewById(R.id.i6), findViewById(R.id.i7), findViewById(R.id.i8)};
 
-        bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
+
 
         fil = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         fil.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
+        fil.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
 
         registerReceiver(bReceiver, fil);
 
@@ -123,12 +118,12 @@ public class GameLogic extends AppCompatActivity
 
         else if(getIntent().getBooleanExtra("host", false))
         {
+            bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
+
             Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
 
             discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
             bAdapter.setName("HT");
-
-            bConnection = new BluetoothConnection(this, Objects.requireNonNull(getIntent().getStringExtra("code")));
 
             startActivity(discoverableIntent);
             new Thread(() -> {
@@ -141,6 +136,8 @@ public class GameLogic extends AppCompatActivity
         // If the game mode is online
         else
         {
+            bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
+
             Client();
         }
 
@@ -187,7 +184,6 @@ public class GameLogic extends AppCompatActivity
     {
         for(int i=0; i<8; i++)
             if(grid[winComb[i][0]] == grid[winComb[i][1]]  && grid[winComb[i][1]] == grid[winComb[i][2]])
-
                 return grid[winComb[i][0]];
 
         return 0;
@@ -242,19 +238,6 @@ public class GameLogic extends AppCompatActivity
 
     }
 
-
-    @SuppressLint("MissingPermission")
-    @Override
-    protected void onStart()
-    {
-        super.onStart();
-        if (!bAdapter.isEnabled())
-        {
-            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivity(enableIntent);
-        }
-    }
-
     @SuppressLint("MissingPermission")
     @Override
     protected void onDestroy()
@@ -274,18 +257,17 @@ public class GameLogic extends AppCompatActivity
     {
         Log.d("SOCKET", "Server method started");
         BluetoothServerSocket bServer = bAdapter.listenUsingRfcommWithServiceRecord("trisonline", UUID.nameUUIDFromBytes("proviamo".getBytes()));
-        BluetoothSocket bSocket = bServer.accept();
+        bSocket = bServer.accept();
 
         if (bSocket!= null) bServer.close(); // After accepting a connection (only two player!)
 
     }
-
-
 
     @SuppressLint("MissingPermission")
     private void Client()
     {
         Log.d("SOCKET", "client method started");
         bAdapter.startDiscovery();
+        dev = bReceiver.dev;
     }
 }
