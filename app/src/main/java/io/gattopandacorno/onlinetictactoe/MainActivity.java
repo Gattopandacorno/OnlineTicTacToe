@@ -23,7 +23,7 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
 
         // Set click listener for when play local game button is touched
-        findViewById(R.id.localButton).setOnClickListener(v->{startLogin(false);});
+        findViewById(R.id.localButton).setOnClickListener(v-> startLogin(false));
 
         // Set click listener for when Play multiplayer game button is touched
         findViewById(R.id.multiButton).setOnClickListener(v -> {

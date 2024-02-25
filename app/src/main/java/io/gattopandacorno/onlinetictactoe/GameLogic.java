@@ -44,7 +44,6 @@ public class GameLogic extends AppCompatActivity
 
     private final BluetoothReceiver bReceiver = new BluetoothReceiver();
     private BluetoothAdapter bAdapter;
-    private IntentFilter fil;
     private BluetoothSocket bSocket;
 
 
@@ -65,7 +64,7 @@ public class GameLogic extends AppCompatActivity
 
 
         // Add specific action that should be detected by the IntentFilter, useful for the online game
-        fil = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        IntentFilter fil = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         fil.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
         fil.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
 
@@ -154,7 +153,7 @@ public class GameLogic extends AppCompatActivity
         findViewById(R.id.reset).setOnClickListener(v -> reset(cells));
 
         //Setting click listener when return to home button is clicked
-        findViewById(R.id.home).setOnClickListener(v -> {returnHome();});
+        findViewById(R.id.home).setOnClickListener(v -> returnHome());
 
         // If the Back button is pressed it shows an Alert, if ok is pressed too it take the players to the MainActivity
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {

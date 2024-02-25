@@ -2,19 +2,14 @@ package io.gattopandacorno.onlinetictactoe;
 
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.Objects;
-import java.util.UUID;
 
 public class BluetoothReceiver extends BroadcastReceiver
 {
@@ -22,7 +17,6 @@ public class BluetoothReceiver extends BroadcastReceiver
     // Not sure if this is the correct thing to do to pass the device and socket to the activity
     // sendBroadcast seems to be only for API 31+
     public BluetoothDevice dev = null;
-    public BluetoothSocket bSocket;
 
     @SuppressLint("MissingPermission")
     @Override
