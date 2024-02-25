@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -17,6 +18,12 @@ import java.util.UUID;
 
 public class BluetoothReceiver extends BroadcastReceiver
 {
+
+    // Not sure if this is the correct thing to do to pass the device and socket to the activity
+    // sendBroadcast seems to be only for API 31+
+    public BluetoothDevice dev = null;
+    public BluetoothSocket bSocket;
+
     @SuppressLint("MissingPermission")
     @Override
     public void onReceive(Context context, Intent intent)
@@ -27,19 +34,20 @@ public class BluetoothReceiver extends BroadcastReceiver
                 Log.d("SOCKET", "action found");
 
                 // Discovery has found a device. Get the BluetoothDevice
-                BluetoothDevice dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
-
-                if(dev != null && dev.getName() != null)
-                    Log.d("SOCKET", "found device " + dev.getName());
-
-                if(dev != null &&  dev.fetchUuidsWithSdp())
+                // TODO: It should be more generalized with the code
+                if(dev != null && dev.getName().equals("HT"))
                 {
+                    Log.d("SOCKET", "found device " + dev.getName());
+                    dev.createBond();
 
-                    Log.d("SOCKET", String.valueOf(dev.getUuids()[0].getUuid()));
+                    try {
+                        bSocket = dev.createRfcommSocketToServiceRecord(UUID.nameUUIDFromBytes("proviamo".getBytes()));
+                        bSocket.connect();
+                    }
+                    catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
                 }
-
-
 
                 break;
 
@@ -83,6 +91,9 @@ public class BluetoothReceiver extends BroadcastReceiver
                         Log.d("SOCKET", "Connected.");
                         break;
                 }
+
+            case BluetoothAdapter.ACTION_DISCOVERY_FINISHED:
+                ((BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter().cancelDiscovery();
 
         }
     }
