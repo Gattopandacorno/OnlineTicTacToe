@@ -6,6 +6,7 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
@@ -42,8 +43,26 @@ public class MainActivity extends AppCompatActivity
         // Set click listener for when Play multiplayer game button is touched
         findViewById(R.id.multiButton).setOnClickListener(v -> {
 
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, 255);
+            if(!((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter().isEnabled())
+            {
+                new AlertDialog.Builder(this).
+                        setMessage("If you want to access the online game, you must use your bluetooth")
+                        .setPositiveButton("OK", (dialog, which) -> {
+                            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+
+                            startActivityForResult(enableBtIntent, 255);})
+                        .show();
+            }
+
+            else
+            {
+                Intent i = new Intent(this, Login.class);
+                i.putExtra("online", true);
+
+                startActivity(i); //Start the activity with the name+join/host form before playing
+                finish();
+            }
+
 
         });
 
@@ -60,7 +79,6 @@ public class MainActivity extends AppCompatActivity
 
             startActivity(i); //Start the activity with the name+join/host form before playing
             finish();
-
         }
     }
 }
