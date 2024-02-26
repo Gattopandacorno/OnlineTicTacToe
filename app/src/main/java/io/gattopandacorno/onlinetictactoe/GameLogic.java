@@ -189,6 +189,8 @@ public class GameLogic extends AppCompatActivity
             if(grid[winComb[i][0]] == grid[winComb[i][1]]  && grid[winComb[i][1]] == grid[winComb[i][2]])
                 return grid[winComb[i][0]];
 
+
+
         return 0;
     } // TODO: Add win count here
 
@@ -224,17 +226,28 @@ public class GameLogic extends AppCompatActivity
     {
         int w = Win(grid);
 
+        SeekBar sb = findViewById(R.id.seekBar);
+
         if (w == 1) // If the winner is the one with the X
+        {
             new AlertDialog.Builder(this).
                     setMessage(getIntent().getStringExtra("playerName1") + " WON THE GAME").
                     setPositiveButton("play again", (dialog, which) -> reset(c))
                     .show();
 
+            sb.setProgress(sb.getProgress() + 1);
+        }
+
+
         else if (w == 2) // If the winner is the one with the O
+        {
             new AlertDialog.Builder(this).
                     setMessage(getIntent().getStringExtra("playerName2") + " WON THE GAME").
                     setPositiveButton("play again", (dialog, which) -> reset(c))
                     .show();
+            sb.setProgress(sb.getProgress()-1);
+        }
+
     }
 
     private void WaitOpponent()
