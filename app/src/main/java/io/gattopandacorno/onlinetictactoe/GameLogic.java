@@ -18,6 +18,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
@@ -147,13 +148,14 @@ public class GameLogic extends AppCompatActivity
             catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
         }
 
-
-
         //Setting click listener for when reset/play again button is clicked
         findViewById(R.id.reset).setOnClickListener(v -> reset(cells));
 
         //Setting click listener when return to home button is clicked
         findViewById(R.id.home).setOnClickListener(v -> returnHome());
+
+        findViewById(R.id.seekBar).setOnTouchListener((v, event) -> true);
+
 
         // If the Back button is pressed it shows an Alert, if ok is pressed too it take the players to the MainActivity
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
