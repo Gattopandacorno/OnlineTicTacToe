@@ -235,7 +235,7 @@ public class GameLogic extends AppCompatActivity
                     setPositiveButton("play again", (dialog, which) -> reset(c))
                     .show();
 
-            sb.setProgress(sb.getProgress() + 1);
+            runOnUiThread(() -> sb.setProgress(sb.getProgress() + 1));
         }
 
 
@@ -245,7 +245,7 @@ public class GameLogic extends AppCompatActivity
                     setMessage(getIntent().getStringExtra("playerName2") + " WON THE GAME").
                     setPositiveButton("play again", (dialog, which) -> reset(c))
                     .show();
-            sb.setProgress(sb.getProgress()-1);
+            runOnUiThread(() -> sb.setProgress(sb.getProgress()-1));
         }
 
     }
