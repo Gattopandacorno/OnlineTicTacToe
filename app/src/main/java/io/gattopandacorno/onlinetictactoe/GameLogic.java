@@ -34,8 +34,8 @@ public class GameLogic extends AppCompatActivity
 
     // Store all the combination to win; horizontals, verticals, diagonals
     private final int[][] winComb = {{0, 1, 2}, {3, 4, 5}, {6, 7, 8},
-            {0, 3, 6}, {1, 4, 7}, {2, 5, 8},
-            {0, 4, 8}, {2, 4, 6}};
+                                    {0, 3, 6}, {1, 4, 7}, {2, 5, 8},
+                                    {0, 4, 8}, {2, 4, 6}};
 
     // Store the situation in the game; 0 = not used, 1 = x, 2 = o
     private final int[] grid = {0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -189,10 +189,8 @@ public class GameLogic extends AppCompatActivity
             if(grid[winComb[i][0]] == grid[winComb[i][1]]  && grid[winComb[i][1]] == grid[winComb[i][2]])
                 return grid[winComb[i][0]];
 
-
-
         return 0;
-    } // TODO: Add win count here
+    }
 
     /**
      * The reset function is not only used when reset button is clicked
@@ -226,7 +224,7 @@ public class GameLogic extends AppCompatActivity
     {
         int w = Win(grid);
 
-        SeekBar sb = findViewById(R.id.seekBar);
+        SeekBar sb = findViewById(R.id.seekBar); // TODO: find out wat makes the alert not popping up
 
         if (w == 1) // If the winner is the one with the X
         {
