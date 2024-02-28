@@ -86,10 +86,8 @@ public class GameLogic extends AppCompatActivity
             {
                 int j = i;
                 cells[i].setOnTouchListener((v, event) -> {
+
                     // Only if the image/cell is touched AND it is not occupied
-
-                    Toast.makeText(this, "image touched", Toast.LENGTH_SHORT).show();
-
                     if (event.getAction() == MotionEvent.ACTION_DOWN && grid[j] == 0)
                     {
                         if (turn)
