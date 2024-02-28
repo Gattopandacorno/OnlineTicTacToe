@@ -47,10 +47,12 @@ public class BluetoothReceiver extends BroadcastReceiver
                     Log.d("SOCKET", "found device " + dev.getName());
                     dev.createBond();
 
-                    try {bSocket = dev.createRfcommSocketToServiceRecord(uuid);}
+                    try {
+                        bSocket = dev.createRfcommSocketToServiceRecord(uuid);
+                        bSocket.connect();
+                    }
                     catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
 
-                    if(bSocket!=null) Log.d("SOCKET", "socket not null ");
                 }
 
                 break;
