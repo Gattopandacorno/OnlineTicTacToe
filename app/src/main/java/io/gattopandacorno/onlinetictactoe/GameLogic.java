@@ -20,11 +20,13 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.UUID;
 
 
@@ -43,9 +45,9 @@ public class GameLogic extends AppCompatActivity
     private boolean turn = true;
 
 
-    private final BluetoothReceiver bReceiver = new BluetoothReceiver();
+    private BluetoothReceiver bReceiver = new BluetoothReceiver("a");
     private BluetoothAdapter bAdapter;
-    private BluetoothSocket bSocket;
+    private BluetoothSocket bSocket = null;
 
 
     @SuppressLint({"SetTextI18n", "UseCompatLoadingForDrawables", "ClickableViewAccessibility", "MissingPermission"})
@@ -69,6 +71,9 @@ public class GameLogic extends AppCompatActivity
         fil.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
         fil.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
 
+        if(getIntent().getStringExtra("code") != null)
+            bReceiver = new BluetoothReceiver(getIntent().getStringExtra("code"));
+
         registerReceiver(bReceiver, fil);
 
         // If the game mode is local
@@ -82,6 +87,9 @@ public class GameLogic extends AppCompatActivity
                 int j = i;
                 cells[i].setOnTouchListener((v, event) -> {
                     // Only if the image/cell is touched AND it is not occupied
+
+                    Toast.makeText(this, "image touched", Toast.LENGTH_SHORT).show();
+
                     if (event.getAction() == MotionEvent.ACTION_DOWN && grid[j] == 0)
                     {
                         if (turn)
@@ -108,9 +116,7 @@ public class GameLogic extends AppCompatActivity
                         runOnUiThread(() -> AlertWin(cells, grid));
                         
                         turn = !turn;
-                        return true;
                     }
-
                     return false;
                 });
             }
@@ -133,8 +139,9 @@ public class GameLogic extends AppCompatActivity
             startActivity(discoverableIntent);
             new Thread(() -> {
                 try {Server();}
-                catch (IOException e) {Log.e("SOCKET", String.valueOf(e));}
+                catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
             });
+
 
         }
 
@@ -144,8 +151,10 @@ public class GameLogic extends AppCompatActivity
             tp2.setText(getIntent().getStringExtra("playerName2"));
             bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
 
-            try {Client();}
-            catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
+            new Thread(() -> {
+                try {Client();}
+                catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
+            });
         }
 
         //Setting click listener for when reset/play again button is clicked
@@ -183,11 +192,11 @@ public class GameLogic extends AppCompatActivity
      * @param grid Is the numeric representation of the game's situation.
      *             It is used to better control when a player is winning or not.
      */
-    private int Win(int[] grid)
+    private int Win(int[] grid) // TODO: find why some combination don't works
     {
-        for(int i=0; i<8; i++)
-            if(grid[winComb[i][0]] == grid[winComb[i][1]]  && grid[winComb[i][1]] == grid[winComb[i][2]])
-                return grid[winComb[i][0]];
+        for (int[] ints : winComb)
+            if (grid[ints[0]] == grid[ints[1]] && grid[ints[1]] == grid[ints[2]])
+                return grid[ints[0]];
 
         return 0;
     }
@@ -285,13 +294,19 @@ public class GameLogic extends AppCompatActivity
     private void Server() throws IOException
     {
         Log.d("SOCKET", "Server method started");
-        UUID uuid = UUID.nameUUIDFromBytes(getIntent().getStringExtra("code").getBytes());
+        UUID uuid = UUID.nameUUIDFromBytes(Objects.requireNonNull(getIntent().getStringExtra("code")).getBytes());
 
         // Tris online is the unique UUID for the server
         BluetoothServerSocket bServer = bAdapter.listenUsingRfcommWithServiceRecord("trisonline", uuid);
         bSocket = bServer.accept();
 
-        if (bSocket!= null) bServer.close(); // After accepting a connection (only two player!)
+        if (bSocket != null)
+        {
+            bServer.close(); // After accepting a connection (only two player!)
+            Log.d("SOCKET", "connection accepted, server closed");
+        }
+
+        // TODO: alert if opponent doesn't show up
     }
 
     /**
@@ -305,15 +320,10 @@ public class GameLogic extends AppCompatActivity
     private void Client() throws IOException
     {
         Log.d("SOCKET", "client method started");
-        UUID uuid = UUID.nameUUIDFromBytes(getIntent().getStringExtra("code").getBytes());
 
         bAdapter.startDiscovery();
-        BluetoothDevice dev = bReceiver.dev;
-        try {
-            bSocket = dev.createRfcommSocketToServiceRecord(uuid);
-            bSocket.connect();
-        }
-        catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
+        bAdapter.cancelDiscovery();
+        bSocket = bReceiver.bSocket;
     }
 
     /**

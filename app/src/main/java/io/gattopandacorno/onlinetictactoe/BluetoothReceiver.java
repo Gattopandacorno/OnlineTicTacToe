@@ -4,12 +4,16 @@ import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
+import android.widget.Toast;
 
+import java.io.IOException;
 import java.util.Objects;
+import java.util.UUID;
 
 public class BluetoothReceiver extends BroadcastReceiver
 {
@@ -17,6 +21,14 @@ public class BluetoothReceiver extends BroadcastReceiver
     // Not sure if this is the correct thing to do to pass the device and socket to the activity
     // sendBroadcast seems to be only for API 31+
     public BluetoothDevice dev = null;
+    private final UUID uuid;
+    public BluetoothSocket bSocket = null;
+
+    public BluetoothReceiver(String code)
+    {
+        uuid = UUID.nameUUIDFromBytes(code.getBytes());
+        Log.d("SOCKET", "uuid saved in the receiver " + code);
+    }
 
     @SuppressLint("MissingPermission")
     @Override
@@ -34,6 +46,11 @@ public class BluetoothReceiver extends BroadcastReceiver
                 {
                     Log.d("SOCKET", "found device " + dev.getName());
                     dev.createBond();
+
+                    try {bSocket = dev.createRfcommSocketToServiceRecord(uuid);}
+                    catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
+
+                    if(bSocket!=null) Log.d("SOCKET", "socket not null ");
                 }
 
                 break;
