@@ -234,19 +234,6 @@ public class GameLogic extends AppCompatActivity
 
     }
 
-    private void WaitOpponent()
-    {
-        runOnUiThread(() -> {
-            ProgressBar pb = new ProgressBar(GameLogic.this);
-            pb.setIndeterminate(true);
-            pb.setPadding(0, 0, 30, 0);
-            pb.setLayoutParams(new ViewGroup.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-            new AlertDialog.Builder(GameLogic.this).setCancelable(false).setView(pb).setMessage("Searching opponent...").create().show();
-        });
-
-    }
-
     @SuppressLint("MissingPermission")
     @Override
     protected void onDestroy()
