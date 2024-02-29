@@ -1,9 +1,14 @@
 package io.gattopandacorno.onlinetictactoe;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
@@ -37,41 +42,32 @@ public class MainActivity extends AppCompatActivity
                                    "This is done to search and connect with the other player. Click 'OK' to turn it on.")
                         .setPositiveButton("OK", (dialog, which) -> {
                             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-
-                            startActivityForResult(enableBtIntent, 255);})
+                            BTlauncher.launch(enableBtIntent);})
                         .show();
             }
 
             // If the bluetooth is already on the user can access the online Login
             else
-            {
                 startLogin(true);
-            }
+
         });
     }
+
 
     /**
      * This method is used to know the result of the bluetooth enabling request.
      * If the result code is OK the user can use the online service and it starts the online Login.
      *
-     * @param requestCode The integer request code originally supplied to
-     *                    startActivityForResult(), allowing you to identify who this
-     *                    result came from.
      * @param resultCode The integer result code returned by the child activity
      *                   through its setResult().
-     * @param data An Intent, which can return result data to the caller
-     *               (various data can be attached to Intent "extras").
-     *
      */
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data)
-    {
-        super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == 255 && resultCode != 0)
-        {
-           startLogin(true);
-        }
-    }
+    ActivityResultLauncher<Intent> BTlauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == Activity.RESULT_OK)
+                    startLogin(true);
+
+            });
+
 
 
     /**
