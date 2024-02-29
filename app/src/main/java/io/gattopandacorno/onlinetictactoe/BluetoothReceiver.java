@@ -3,20 +3,11 @@ package io.gattopandacorno.onlinetictactoe;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
-import android.widget.Toast;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.ConcurrentModificationException;
 import java.util.Objects;
-import java.util.UUID;
-
 public class BluetoothReceiver extends BroadcastReceiver
 {
 

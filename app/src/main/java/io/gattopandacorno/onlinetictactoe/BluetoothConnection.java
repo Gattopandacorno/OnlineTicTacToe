@@ -24,7 +24,7 @@ public class BluetoothConnection
     private static final UUID uuid = UUID.nameUUIDFromBytes("TRISONLINE".getBytes());
 
     private final BluetoothAdapter bAdapter;
-    private Context ctx;
+    private final Context ctx;
 
     private AcceptThread acceptThr;
 
