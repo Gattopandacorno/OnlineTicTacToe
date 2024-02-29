@@ -55,6 +55,7 @@ public class Login extends AppCompatActivity
             // the app only need to ask location permission because is the only dangerous one used
             ActivityCompat.requestPermissions(Login.this, new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
                     Manifest.permission.BLUETOOTH_ADMIN}, 255);
 
             // Set click listener for when Join button is touched

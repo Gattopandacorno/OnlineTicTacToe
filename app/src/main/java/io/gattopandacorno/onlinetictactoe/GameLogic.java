@@ -129,7 +129,7 @@ public class GameLogic extends AppCompatActivity
 
             // Ask if the device can be discoverable so it can be found and then paired/connected with the other player
             Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 800);
 
             // Set the name for the host player
             bAdapter.setName("HT");
@@ -139,8 +139,6 @@ public class GameLogic extends AppCompatActivity
                 try {Server();}
                 catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
             });
-
-
         }
 
         // If the game is online and the player is joining another player (not host)
@@ -149,10 +147,10 @@ public class GameLogic extends AppCompatActivity
             tp2.setText(getIntent().getStringExtra("playerName2"));
             bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
 
-            new Thread(() -> {
+            //new Thread(() -> {
                 try {Client();}
                 catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
-            });
+            //});
         }
 
         //Setting click listener for when reset/play again button is clicked
@@ -295,13 +293,16 @@ public class GameLogic extends AppCompatActivity
         UUID uuid = UUID.nameUUIDFromBytes(Objects.requireNonNull(getIntent().getStringExtra("code")).getBytes());
 
         // Tris online is the unique UUID for the server
-        BluetoothServerSocket bServer = bAdapter.listenUsingRfcommWithServiceRecord("trisonline", uuid);
+        BluetoothServerSocket bServer = bAdapter.listenUsingInsecureRfcommWithServiceRecord("trisonline", uuid);
         bSocket = bServer.accept();
 
         if (bSocket != null)
         {
-            bServer.close(); // After accepting a connection (only two player!)
-            Log.d("SOCKET", "connection accepted, server closed");
+            try {
+                bServer.close(); // After accepting a connection (only two player!)
+                Log.d("SOCKET", "connection accepted, server closed");
+            }
+            catch (IOException e) { Log.d("SOCKET", "not closed " + e);}
         }
 
         // TODO: alert if opponent doesn't show up
@@ -320,8 +321,8 @@ public class GameLogic extends AppCompatActivity
         Log.d("SOCKET", "client method started");
 
         bAdapter.startDiscovery();
+
         bAdapter.cancelDiscovery();
-        bSocket = bReceiver.bSocket;
     }
 
     /**

@@ -27,7 +27,7 @@ public class BluetoothReceiver extends BroadcastReceiver
     public BluetoothReceiver(String code)
     {
         uuid = UUID.nameUUIDFromBytes(code.getBytes());
-        Log.d("SOCKET", "uuid saved in the receiver " + code);
+        Log.d("SOCKET", "uuid saved in the receiver " + uuid.toString());
     }
 
     @SuppressLint("MissingPermission")
@@ -46,9 +46,10 @@ public class BluetoothReceiver extends BroadcastReceiver
                 {
                     Log.d("SOCKET", "found device " + dev.getName());
                     dev.createBond();
+                    dev.fetchUuidsWithSdp();
 
                     try {
-                        bSocket = dev.createRfcommSocketToServiceRecord(uuid);
+                        bSocket = dev.createInsecureRfcommSocketToServiceRecord(dev.getUuids()[0].getUuid());
                         bSocket.connect();
                     }
                     catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
@@ -97,10 +98,6 @@ public class BluetoothReceiver extends BroadcastReceiver
                         Log.d("SOCKET", "Connected.");
                         break;
                 }
-
-            case BluetoothAdapter.ACTION_DISCOVERY_FINISHED:
-                ((BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter().cancelDiscovery();
-
         }
     }
 }
