@@ -58,8 +58,7 @@ public class MainActivity extends AppCompatActivity
      * This method is used to know the result of the bluetooth enabling request.
      * If the result code is OK the user can use the online service and it starts the online Login.
      *
-     * @param resultCode The integer result code returned by the child activity
-     *                   through its setResult().
+     * @param resultCode The integer result code returned by the child activity.
      */
     ActivityResultLauncher<Intent> BTlauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {

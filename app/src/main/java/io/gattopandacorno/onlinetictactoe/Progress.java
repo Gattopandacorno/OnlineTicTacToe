@@ -2,7 +2,9 @@ package io.gattopandacorno.onlinetictactoe;
 import android.content.Context;
 import android.graphics.Color;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -40,7 +42,7 @@ public class Progress
             ll.addView(tvText);
 
             AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
-            builder.setCancelable(true);
+            builder.setCancelable(false);
             builder.setView(ll);
 
             dialog = builder.create();
