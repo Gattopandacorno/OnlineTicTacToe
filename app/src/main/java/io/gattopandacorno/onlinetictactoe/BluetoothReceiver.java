@@ -2,13 +2,14 @@ package io.gattopandacorno.onlinetictactoe;
 
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -17,6 +18,19 @@ import java.util.UUID;
 
 public class BluetoothReceiver extends BroadcastReceiver
 {
+
+    // Not sure if this is the correct thing to do to pass the device and socket to the activity
+    // sendBroadcast seems to be only for API 31+
+    public BluetoothDevice dev = null;
+    private final UUID uuid;
+    public BluetoothSocket bSocket = null;
+
+    public BluetoothReceiver(String code)
+    {
+        uuid = UUID.nameUUIDFromBytes(code.getBytes());
+        Log.d("SOCKET", "uuid saved in the receiver " + uuid.toString());
+    }
+
     @SuppressLint("MissingPermission")
     @Override
     public void onReceive(Context context, Intent intent)
@@ -27,19 +41,21 @@ public class BluetoothReceiver extends BroadcastReceiver
                 Log.d("SOCKET", "action found");
 
                 // Discovery has found a device. Get the BluetoothDevice
-                BluetoothDevice dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
-                if(dev != null && dev.getName() != null && Objects.equals(dev.getName(), "HT"))
+                if(dev != null && dev.getName().equals("HT"))
                 {
                     Log.d("SOCKET", "found device " + dev.getName());
                     dev.createBond();
+                    dev.fetchUuidsWithSdp();
 
-                    Intent local = new Intent();
-                    local.setAction("service.to.activity.transfer");
-                    local.putExtra("device", dev);
-                    context.sendBroadcast(local);
+                    try {
+                        bSocket = dev.createInsecureRfcommSocketToServiceRecord(dev.getUuids()[0].getUuid());
+                        bSocket.connect();
+                    }
+                    catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
+
                 }
-
 
                 break;
 
@@ -90,19 +106,6 @@ public class BluetoothReceiver extends BroadcastReceiver
                         Log.d("SOCKET", "Connected.");
                         break;
                 }
-
-            case BluetoothDevice.ACTION_BOND_STATE_CHANGED:
-                switch (intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, 10))
-                {
-                    case BluetoothDevice.BOND_BONDING:
-                        Log.d("SOCKET", "bonding");
-                        break;
-
-                    case BluetoothDevice.BOND_BONDED:
-                        Log.d("SOCKET", "bonded");
-                        break;
-                }
-
         }
     }
 }

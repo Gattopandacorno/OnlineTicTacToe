@@ -19,7 +19,9 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.RequiresApi;
@@ -38,26 +40,23 @@ public class GameLogic extends AppCompatActivity
 
     // Store all the combination to win; horizontals, verticals, diagonals
     private final int[][] winComb = {{0, 1, 2}, {3, 4, 5}, {6, 7, 8},
-            {0, 3, 6}, {1, 4, 7}, {2, 5, 8},
-            {0, 4, 8}, {2, 4, 6}};
+                                    {0, 3, 6}, {1, 4, 7}, {2, 5, 8},
+                                    {0, 4, 8}, {2, 4, 6}};
 
     // Store the situation in the game; 0 = not used, 1 = x, 2 = o
     private final int[] grid = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     private boolean turn = true;
-    int pl; // pl is the value used to distinguish player1 from player2
 
-
-    private final BluetoothReceiver bReceiver = new BluetoothReceiver();
+    private BluetoothReceiver bReceiver = new BluetoothReceiver("a");
     private BluetoothAdapter bAdapter;
-    private IntentFilter fil;
-    private BluetoothDevice dev;
-    private BluetoothConnection bConnection;
+    private BluetoothSocket bSocket = null;
 
 
     @SuppressLint({"SetTextI18n", "UseCompatLoadingForDrawables", "ClickableViewAccessibility", "MissingPermission"})
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.gameboard);
         
@@ -69,11 +68,15 @@ public class GameLogic extends AppCompatActivity
                 findViewById(R.id.i3), findViewById(R.id.i4), findViewById(R.id.i5),
                 findViewById(R.id.i6), findViewById(R.id.i7), findViewById(R.id.i8)};
 
-        bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
 
-        fil = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+        // Add specific action that should be detected by the IntentFilter, useful for the online game
+        IntentFilter fil = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         fil.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
+        fil.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         fil.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+
+        if(getIntent().getStringExtra("code") != null)
+            bReceiver = new BluetoothReceiver(getIntent().getStringExtra("code"));
 
         registerReceiver(bReceiver, fil);
 
@@ -87,6 +90,7 @@ public class GameLogic extends AppCompatActivity
             {
                 int j = i;
                 cells[i].setOnTouchListener((v, event) -> {
+
                     // Only if the image/cell is touched AND it is not occupied
                     if (event.getAction() == MotionEvent.ACTION_DOWN && grid[j] == 0)
                     {
@@ -114,7 +118,6 @@ public class GameLogic extends AppCompatActivity
                         runOnUiThread(() -> AlertWin(cells, grid));
                         
                         turn = !turn;
-                        return true;
                     }
 
                     return false;
@@ -122,43 +125,47 @@ public class GameLogic extends AppCompatActivity
             }
         }
 
+        // If the game is online and the player is hosting
         else if(getIntent().getBooleanExtra("host", false))
         {
+            tp1.setText(getIntent().getStringExtra("playerName1"));
+
+            bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
+
+            // Ask if the device can be discoverable so it can be found and then paired/connected with the other player
             Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 800);
 
-            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+            // Set the name for the host player
             bAdapter.setName("HT");
-
-            bConnection = new BluetoothConnection(this, Objects.requireNonNull(getIntent().getStringExtra("code")));
 
             startActivity(discoverableIntent);
             new Thread(() -> {
                 try {Server();}
-                catch (IOException e) {Log.e("SOCKET", String.valueOf(e));}
+                catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
             });
-
         }
 
-        // If the game mode is online
+        // If the game is online and the player is joining another player (not host)
         else
         {
-            try {Client();}
-            catch (IOException e) {Log.e("SOCKET", String.valueOf(e));}
+            tp2.setText(getIntent().getStringExtra("playerName2"));
+            bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
+
+            //new Thread(() -> {
+                try {Client();}
+                catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
+            //});
         }
-
-
 
         //Setting click listener for when reset/play again button is clicked
         findViewById(R.id.reset).setOnClickListener(v -> reset(cells));
 
         //Setting click listener when return to home button is clicked
-        findViewById(R.id.home).setOnClickListener(v -> {
-            Intent i = new Intent(this, MainActivity.class);
+        findViewById(R.id.home).setOnClickListener(v -> returnHome());
 
-            startActivity(i); //Return to home view
+        findViewById(R.id.seekBar).setOnTouchListener((v, event) -> true);
 
-            finish();
-        });
 
         // If the Back button is pressed it shows an Alert, if ok is pressed too it take the players to the MainActivity
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -169,12 +176,10 @@ public class GameLogic extends AppCompatActivity
                         .setMessage("Are you sure you want to leave the game?")
                         .setNegativeButton("ok", (dialog, which) -> {
 
-                            // TODO: remove the room if it was an online
+                            // TODO: remove the room if it was an online game
                             unregisterReceiver(bReceiver);
 
-                            Intent i = new Intent(GameLogic.this, MainActivity.class);
-                            startActivity(i);
-                            finish();
+                           returnHome();
                         }).show();
             }
         });
@@ -184,20 +189,24 @@ public class GameLogic extends AppCompatActivity
      * Control if there is a winner in the game, this is done with the winning combination matrix
      * If in the grid there is a winning combination it returns the value of the winner; 1 = x, 2 = o
      * Otherwise it returns 0
+     *
+     * @param grid Is the numeric representation of the game's situation.
+     *             It is used to better control when a player is winning or not.
      */
-    private int Win(int[] grid)
+    private int Win(int[] grid) // TODO: find why some combination don't works
     {
-        for(int i=0; i<8; i++)
-            if(grid[winComb[i][0]] == grid[winComb[i][1]]  && grid[winComb[i][1]] == grid[winComb[i][2]])
-
-                return grid[winComb[i][0]];
+        for (int[] ints : winComb)
+            if (grid[ints[0]] == grid[ints[1]] && grid[ints[1]] == grid[ints[2]])
+                return grid[ints[0]];
 
         return 0;
-    } // TODO: Add win count here
+    }
 
     /**
      * The reset function is not only used when reset button is clicked
      * but also when the play again 'button' is shown  after a win in the alert dialog
+     *
+     * @param c Is an array of images, represents the board game.
      */
     @SuppressLint("UseCompatLoadingForDrawables")
     private void reset(ImageView[] c)
@@ -208,27 +217,45 @@ public class GameLogic extends AppCompatActivity
 
         for (int i = 0; i < 9; i++)
         {
-            c[i].setImageDrawable(getDrawable(R.drawable.ic_launcher_background));
+            c[i].setImageDrawable(getDrawable(R.drawable.card));
             grid[i] = 0;
         }
     }
 
-    /* If a player wins this function shows an alert message with the winner's name*/
+    /**
+     * If a player wins this function shows an alert message with the winner's name
+     *
+     * @param c Is an array of images, represents the board game.
+     *
+     * @param grid Is the numeric representation of the game's situation.
+     *             It is used to better control when a player is winning or not.
+     * */
     private void AlertWin(ImageView[] c, int[] grid)
     {
         int w = Win(grid);
 
+        SeekBar sb = findViewById(R.id.seekBar); // TODO: find out wat makes the alert not popping up
+
         if (w == 1) // If the winner is the one with the X
+        {
             new AlertDialog.Builder(this).
                     setMessage(getIntent().getStringExtra("playerName1") + " WON THE GAME").
                     setPositiveButton("play again", (dialog, which) -> reset(c))
                     .show();
 
+            runOnUiThread(() -> sb.setProgress(sb.getProgress() + 1));
+        }
+
+
         else if (w == 2) // If the winner is the one with the O
+        {
             new AlertDialog.Builder(this).
                     setMessage(getIntent().getStringExtra("playerName2") + " WON THE GAME").
                     setPositiveButton("play again", (dialog, which) -> reset(c))
                     .show();
+            runOnUiThread(() -> sb.setProgress(sb.getProgress()-1));
+        }
+
     }
 
     private void WaitOpponent()
@@ -242,19 +269,6 @@ public class GameLogic extends AppCompatActivity
             new AlertDialog.Builder(GameLogic.this).setCancelable(false).setView(pb).setMessage("Searching opponent...").create().show();
         });
 
-    }
-
-
-    @SuppressLint("MissingPermission")
-    @Override
-    protected void onStart()
-    {
-        super.onStart();
-        if (!bAdapter.isEnabled())
-        {
-            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivity(enableIntent);
-        }
     }
 
     @SuppressLint("MissingPermission")
@@ -271,23 +285,61 @@ public class GameLogic extends AppCompatActivity
     }
 
 
+    /**
+     * Server is the method used by host devices.
+     * It starts a BluetoothServerSocket that listen and then accept for one connection (2nd player).
+     *
+     * @throws IOException When the listRfcommWithServiceRecord is called an exception can be thrown
+     */
     @SuppressLint("MissingPermission")
     private void Server() throws IOException
     {
         Log.d("SOCKET", "Server method started");
-        BluetoothServerSocket bServer = bAdapter.listenUsingRfcommWithServiceRecord("trisonline", UUID.nameUUIDFromBytes("proviamo".getBytes()));
-        BluetoothSocket bSocket = bServer.accept();
+        UUID uuid = UUID.nameUUIDFromBytes(Objects.requireNonNull(getIntent().getStringExtra("code")).getBytes());
 
-        if (bSocket!= null) bServer.close(); // After accepting a connection (only two player!)
+        // Tris online is the unique UUID for the server
+        BluetoothServerSocket bServer = bAdapter.listenUsingInsecureRfcommWithServiceRecord("trisonline", uuid);
+        bSocket = bServer.accept();
 
+        if (bSocket != null)
+        {
+            try {
+                bServer.close(); // After accepting a connection (only two player!)
+                Log.d("SOCKET", "connection accepted, server closed");
+            }
+            catch (IOException e) { Log.d("SOCKET", "not closed " + e);}
+        }
+
+        // TODO: alert if opponent doesn't show up
     }
 
-
-
+    /**
+     * Client is the method used by client devices.
+     * Searches all the other near devices with bluetooth on.
+     * startDiscovery runs in a separate thread and returns after being called.
+     *
+     * @throws IOException When createRfcommSocketToServiceRecord is called an exception can be thrown.
+     */
     @SuppressLint("MissingPermission")
     private void Client() throws IOException
     {
-            Log.d("SOCKET", "client method started");
-            bAdapter.startDiscovery();
+        Log.d("SOCKET", "client method started");
+
+        bAdapter.startDiscovery();
+
+        bAdapter.cancelDiscovery();
+    }
+
+    /**
+     * This method was created to not repeat the same code for the home button and the back pressed.
+     * As the name suggest start the activity to return in the Home view (MainActivity).
+     */
+    private void returnHome()
+    {
+        Intent i = new Intent(this, MainActivity.class);
+
+        startActivity(i); //Return to home view
+
+        finish();
     }
 }
