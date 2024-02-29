@@ -280,7 +280,7 @@ public class BluetoothConnection
          */
         public void run()
         {
-
+            read();
         }
 
         /**
@@ -348,5 +348,11 @@ public class BluetoothConnection
         Log.d(TAG, "write: Write Called.");
         //perform the write
         connectedThr.write(out);
+    }
+
+    public void disconnect()
+    {
+        // TODO: tell the other device to disconnect
+        connectedThr.cancel();
     }
 }

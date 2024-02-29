@@ -11,9 +11,9 @@
         android:layout_height="wrap_content"
         android:text="@string/name"
         android:textSize="@android:dimen/app_icon_size"
-        app:layout_constraintBottom_toTopOf="@+id/player"
+        android:layout_marginTop="@android:dimen/app_icon_size"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.491"
+        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -22,64 +22,34 @@
         android:layout_width="match_parent"
         android:layout_height="@android:dimen/app_icon_size"
 
+        android:layout_marginLeft="@android:dimen/app_icon_size"
+        android:layout_marginRight="@android:dimen/app_icon_size"
         android:autofillHints="true"
         android:background="@color/white"
         android:hint="Enter name..."
         android:inputType="text"
         android:textColor="@color/black"
         android:textColorHint="@color/gray"
-        android:layout_marginLeft="@android:dimen/app_icon_size"
-        android:layout_marginRight="@android:dimen/app_icon_size"
-        app:layout_constraintBottom_toTopOf="@+id/text2"
+        app:layout_constraintBottom_toTopOf="@+id/linearLayout3"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintHorizontal_bias="0.1"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/text"
+        app:layout_constraintVertical_bias="0.2"
         tools:ignore="HardcodedText,LabelFor">
 
     </EditText>
-
-    <TextView
-        android:id="@+id/text2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Type game code"
-        android:textSize="@android:dimen/app_icon_size"
-        app:layout_constraintBottom_toTopOf="@+id/linearLayout3"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.491"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:ignore="HardcodedText" />
-
-    <EditText
-        android:id="@+id/code"
-        android:layout_width="match_parent"
-        android:layout_height="@android:dimen/app_icon_size"
-        android:autofillHints="true"
-        android:background="@color/white"
-        android:hint="Enter code...."
-        android:inputType="text"
-        android:textColor="@color/black"
-        android:textColorHint="@color/gray"
-        android:layout_marginRight="@android:dimen/app_icon_size"
-        android:layout_marginLeft="@android:dimen/app_icon_size"
-        app:layout_constraintBottom_toTopOf="@+id/linearLayout3"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/player"
-        tools:ignore="HardcodedText,LabelFor" />
 
     <LinearLayout
         android:id="@+id/linearLayout3"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:layout_marginBottom="@android:dimen/app_icon_size"
+        android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/text">
 
         <Button
             android:id="@+id/join"

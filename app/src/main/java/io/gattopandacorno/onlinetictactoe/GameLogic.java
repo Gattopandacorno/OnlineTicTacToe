@@ -51,8 +51,8 @@ public class GameLogic extends AppCompatActivity
         findViewById(R.id.t2).setVisibility(View.INVISIBLE);
 
         ImageView[] cells = {findViewById(R.id.i0), findViewById(R.id.i1), findViewById(R.id.i2),
-                findViewById(R.id.i3), findViewById(R.id.i4), findViewById(R.id.i5),
-                findViewById(R.id.i6), findViewById(R.id.i7), findViewById(R.id.i8)};
+                             findViewById(R.id.i3), findViewById(R.id.i4), findViewById(R.id.i5),
+                             findViewById(R.id.i6), findViewById(R.id.i7), findViewById(R.id.i8)};
 
 
         // Add specific action that should be detected by the IntentFilter, useful for the online game
@@ -73,7 +73,7 @@ public class GameLogic extends AppCompatActivity
             tp1.setText(getIntent().getStringExtra("playerName1"));
             tp2.setText(getIntent().getStringExtra("playerName2"));
 
-            for (int i = 0; i < 9; i++)
+            for (int i = 0; i < cells.length; i++)
             {
                 int j = i;
                 cells[i].setOnTouchListener((v, event) -> {
@@ -105,6 +105,7 @@ public class GameLogic extends AppCompatActivity
                         runOnUiThread(() -> AlertWin(cells, grid));
                         
                         turn = !turn;
+                        return true;
                     }
 
                     return false;
@@ -112,7 +113,7 @@ public class GameLogic extends AppCompatActivity
             }
         }
 
-        // If the game is online and the player is hosting
+        // If the game is online
         else
         {
             tp1.setText(getIntent().getStringExtra("playerName1"));
@@ -151,7 +152,7 @@ public class GameLogic extends AppCompatActivity
                         .setMessage("Are you sure you want to leave the game?")
                         .setNegativeButton("ok", (dialog, which) -> {
 
-                            // TODO: remove the room if it was an online game
+                            bReceiver.bConnection.disconnect();
                             unregisterReceiver(bReceiver);
 
                            returnHome();
