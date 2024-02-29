@@ -48,7 +48,7 @@ public class GameLogic extends AppCompatActivity
 
     private boolean turn = true;
 
-    private BluetoothReceiver bReceiver = new BluetoothReceiver("a");
+    private BluetoothReceiver bReceiver;
     private BluetoothAdapter bAdapter;
     private BluetoothSocket bSocket = null;
 
@@ -75,10 +75,11 @@ public class GameLogic extends AppCompatActivity
         fil.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
         fil.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
 
-        if(getIntent().getStringExtra("code") != null)
-            bReceiver = new BluetoothReceiver(getIntent().getStringExtra("code"));
-
+        bReceiver = new BluetoothReceiver(this);
         registerReceiver(bReceiver, fil);
+
+        bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
+        bAdapter.setName("HT");
 
         // If the game mode is local
         if (!getIntent().getBooleanExtra("online", false))
@@ -126,37 +127,25 @@ public class GameLogic extends AppCompatActivity
         }
 
         // If the game is online and the player is hosting
-        else if(getIntent().getBooleanExtra("host", false))
+        else
         {
             tp1.setText(getIntent().getStringExtra("playerName1"));
-
-            bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
 
             // Ask if the device can be discoverable so it can be found and then paired/connected with the other player
             Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
             discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 800);
 
-            // Set the name for the host player
-            bAdapter.setName("HT");
-
             startActivity(discoverableIntent);
-            new Thread(() -> {
-                try {Server();}
-                catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
-            });
+            bReceiver.bConnection.start();
+
+            if(!getIntent().getBooleanExtra("host", false))
+            {
+                tp2.setText(getIntent().getStringExtra("playerName2"));
+                bAdapter.startDiscovery();
+            }
+
         }
 
-        // If the game is online and the player is joining another player (not host)
-        else
-        {
-            tp2.setText(getIntent().getStringExtra("playerName2"));
-            bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
-
-            //new Thread(() -> {
-                try {Client();}
-                catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
-            //});
-        }
 
         //Setting click listener for when reset/play again button is clicked
         findViewById(R.id.reset).setOnClickListener(v -> reset(cells));
@@ -282,52 +271,6 @@ public class GameLogic extends AppCompatActivity
             if(bAdapter != null) bAdapter.disable();
             bAdapter = null;
         }
-    }
-
-
-    /**
-     * Server is the method used by host devices.
-     * It starts a BluetoothServerSocket that listen and then accept for one connection (2nd player).
-     *
-     * @throws IOException When the listRfcommWithServiceRecord is called an exception can be thrown
-     */
-    @SuppressLint("MissingPermission")
-    private void Server() throws IOException
-    {
-        Log.d("SOCKET", "Server method started");
-        UUID uuid = UUID.nameUUIDFromBytes(Objects.requireNonNull(getIntent().getStringExtra("code")).getBytes());
-
-        // Tris online is the unique UUID for the server
-        BluetoothServerSocket bServer = bAdapter.listenUsingInsecureRfcommWithServiceRecord("trisonline", uuid);
-        bSocket = bServer.accept();
-
-        if (bSocket != null)
-        {
-            try {
-                bServer.close(); // After accepting a connection (only two player!)
-                Log.d("SOCKET", "connection accepted, server closed");
-            }
-            catch (IOException e) { Log.d("SOCKET", "not closed " + e);}
-        }
-
-        // TODO: alert if opponent doesn't show up
-    }
-
-    /**
-     * Client is the method used by client devices.
-     * Searches all the other near devices with bluetooth on.
-     * startDiscovery runs in a separate thread and returns after being called.
-     *
-     * @throws IOException When createRfcommSocketToServiceRecord is called an exception can be thrown.
-     */
-    @SuppressLint("MissingPermission")
-    private void Client() throws IOException
-    {
-        Log.d("SOCKET", "client method started");
-
-        bAdapter.startDiscovery();
-
-        bAdapter.cancelDiscovery();
     }
 
     /**

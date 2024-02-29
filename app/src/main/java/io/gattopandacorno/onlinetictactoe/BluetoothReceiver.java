@@ -13,6 +13,7 @@ import android.widget.Toast;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.ConcurrentModificationException;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -22,14 +23,14 @@ public class BluetoothReceiver extends BroadcastReceiver
     // Not sure if this is the correct thing to do to pass the device and socket to the activity
     // sendBroadcast seems to be only for API 31+
     public BluetoothDevice dev = null;
-    private final UUID uuid;
-    public BluetoothSocket bSocket = null;
 
-    public BluetoothReceiver(String code)
-    {
-        uuid = UUID.nameUUIDFromBytes(code.getBytes());
-        Log.d("SOCKET", "uuid saved in the receiver " + uuid.toString());
-    }
+    public BluetoothConnection bConnection;
+
+     public BluetoothReceiver(Context ctx)
+     {
+         bConnection = new BluetoothConnection(ctx);
+     }
+
 
     @SuppressLint("MissingPermission")
     @Override
@@ -41,23 +42,10 @@ public class BluetoothReceiver extends BroadcastReceiver
                 Log.d("SOCKET", "action found");
 
                 // Discovery has found a device. Get the BluetoothDevice
-                dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                BluetoothDevice tmp = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
-                if(dev != null && dev.getName().equals("HT"))
-                {
-                    Log.d("SOCKET", "found device " + dev.getName());
-                    dev.createBond();
-                    dev.fetchUuidsWithSdp();
-
-                    try {
-                        bSocket = dev.createInsecureRfcommSocketToServiceRecord(dev.getUuids()[0].getUuid());
-                        bSocket.connect();
-                    }
-                    catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
-
-                }
-
-                break;
+                if(tmp != null && tmp.getName().equals("HT"))
+                    bConnection.startClient(tmp);
 
             case BluetoothAdapter.ACTION_STATE_CHANGED:
 
