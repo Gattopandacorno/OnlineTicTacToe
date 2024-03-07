@@ -5,21 +5,21 @@ import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 
 public class GameLogic extends AppCompatActivity
@@ -35,6 +35,9 @@ public class GameLogic extends AppCompatActivity
 
     private boolean turn = true;
 
+    private ImageView[] cells;
+
+    private int numPlayer;
     private BluetoothReceiver bReceiver;
     private BluetoothAdapter bAdapter;
 
@@ -50,9 +53,9 @@ public class GameLogic extends AppCompatActivity
         findViewById(R.id.t1).setVisibility(View.VISIBLE);
         findViewById(R.id.t2).setVisibility(View.INVISIBLE);
 
-        ImageView[] cells = {findViewById(R.id.i0), findViewById(R.id.i1), findViewById(R.id.i2),
-                             findViewById(R.id.i3), findViewById(R.id.i4), findViewById(R.id.i5),
-                             findViewById(R.id.i6), findViewById(R.id.i7), findViewById(R.id.i8)};
+        cells = new ImageView[] {findViewById(R.id.i0), findViewById(R.id.i1), findViewById(R.id.i2),
+                findViewById(R.id.i3), findViewById(R.id.i4), findViewById(R.id.i5),
+                findViewById(R.id.i6), findViewById(R.id.i7), findViewById(R.id.i8)};
 
 
         // Add specific action that should be detected by the IntentFilter, useful for the online game
@@ -117,6 +120,9 @@ public class GameLogic extends AppCompatActivity
         else
         {
             tp1.setText(getIntent().getStringExtra("playerName1"));
+            tp2.setText(getIntent().getStringExtra("playerName2"));
+            Drawable d;
+            LocalBroadcastManager.getInstance(this).registerReceiver(getMsg , new IntentFilter("sendmsg"));
 
             // Ask if the device can be discoverable so it can be found and then paired/connected with the other player
             Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
@@ -128,18 +134,61 @@ public class GameLogic extends AppCompatActivity
             if(!getIntent().getBooleanExtra("host", false))
             {
                 tp2.setText(getIntent().getStringExtra("playerName2"));
+                d = getDrawable(R.drawable.o);
+                numPlayer = 2;
+                turn = false;
                 bAdapter.startDiscovery();
             }
 
+            else
+            {
+                d = getDrawable(R.drawable.x);
+                numPlayer = 1;
+            }
+
+            for (int i = 0; i < cells.length; i++)
+            {
+                int j = i;
+                cells[i].setOnTouchListener((v, event) -> {
+
+                    // Only if the image/cell is touched AND it is not occupied
+                    if (event.getAction() == MotionEvent.ACTION_DOWN && grid[j] == 0 && turn)
+                    {
+                        cells[j].setImageDrawable(d);
+                        grid[j] = numPlayer;
+
+                        turnVisibility(numPlayer);
+
+                        bReceiver.bConnection.write(String.valueOf(j).getBytes());
+
+                        turn = !turn;
+
+                        // Create a thread to control if somebody win
+                        // Thread cannot be used because after calling Win it shows an alert dialog
+                        runOnUiThread(() -> AlertWin(cells, grid));
+
+                        return true;
+                    }
+
+                    return false;
+                });
+            }
         }
 
 
-        //Setting click listener for when reset/play again button is clicked
-        findViewById(R.id.reset).setOnClickListener(v -> reset(cells));
 
-        //Setting click listener when return to home button is clicked
+
+        // Setting click listener for when reset/play again button is clicked
+        findViewById(R.id.reset).setOnClickListener(v -> {
+            reset(cells);
+            if(getIntent().getBooleanExtra("online", false)) bReceiver.bConnection.write("again".getBytes());
+
+        });
+
+        // Setting click listener when return to home button is clicked
         findViewById(R.id.home).setOnClickListener(v -> returnHome());
 
+        // Avoids the slide of the win streak seekbar by the users
         findViewById(R.id.seekBar).setOnTouchListener((v, event) -> true);
 
 
@@ -150,16 +199,52 @@ public class GameLogic extends AppCompatActivity
             {
                 new AlertDialog.Builder(GameLogic.this)
                         .setMessage("Are you sure you want to leave the game?")
-                        .setNegativeButton("ok", (dialog, which) -> {
-
-                            bReceiver.bConnection.disconnect();
-                            unregisterReceiver(bReceiver);
-
-                           returnHome();
-                        }).show();
+                        .setNegativeButton("ok", (dialog, which) -> returnHome()).show();
             }
         });
     }
+
+    BroadcastReceiver getMsg = new BroadcastReceiver() {
+        @SuppressLint("UseCompatLoadingForDrawables")
+        @Override
+        public void onReceive(Context context, Intent intent)
+        {
+            String msg = intent.getStringExtra("msg");
+
+            if (msg == null || msg.equals(" ")) return;
+            else if (msg.equals("disconnect")) returnHome();
+            else if(msg.matches("^(\\d)+$"))
+            {
+                turn    = true;
+                int i   = Integer.parseInt(msg);
+                grid[i] = invertPlayer(numPlayer);
+                if(invertPlayer(numPlayer) == 1) cells[i].setImageDrawable(getDrawable(R.drawable.x));
+                else cells[i].setImageDrawable(getDrawable(R.drawable.o));
+
+                runOnUiThread(() -> AlertWin(cells, grid));
+
+                turnVisibility(invertPlayer(numPlayer));
+            }
+            else if(msg.equals("again")) reset(cells);
+            else if(msg.equals("start"))
+                bReceiver.bConnection.write(getIntent().getStringExtra("playerName"+ numPlayer).getBytes());
+            else
+            {
+                TextView tmp;
+                if(numPlayer==1){
+                    tmp = findViewById(R.id.tp2);
+                    getIntent().putExtra("playerName2", msg);
+                }
+                else
+                {
+                    tmp = findViewById(R.id.tp1);
+                    getIntent().putExtra("playerName2", msg);
+                }
+
+                tmp.setText(msg);
+            }
+        }
+    };
 
     /**
      * Control if there is a winner in the game, this is done with the winning combination matrix
@@ -187,7 +272,9 @@ public class GameLogic extends AppCompatActivity
     @SuppressLint("UseCompatLoadingForDrawables")
     private void reset(ImageView[] c)
     {
-        turn = true;
+        if(!getIntent().getBooleanExtra("online", false)) turn = true;
+        else turn = (numPlayer==1);
+
         findViewById(R.id.t1).setVisibility(View.VISIBLE);
         findViewById(R.id.t2).setVisibility(View.INVISIBLE);
 
@@ -216,7 +303,11 @@ public class GameLogic extends AppCompatActivity
         {
             new AlertDialog.Builder(this).
                     setMessage(getIntent().getStringExtra("playerName1") + " WON THE GAME").
-                    setPositiveButton("play again", (dialog, which) -> reset(c))
+                    setPositiveButton("play again", (dialog, which) -> {
+                        reset(c);
+                        if(getIntent().getBooleanExtra("online", false))
+                            bReceiver.bConnection.write("again".getBytes());
+                    })
                     .show();
 
             runOnUiThread(() -> sb.setProgress(sb.getProgress() + 1));
@@ -227,7 +318,11 @@ public class GameLogic extends AppCompatActivity
         {
             new AlertDialog.Builder(this).
                     setMessage(getIntent().getStringExtra("playerName2") + " WON THE GAME").
-                    setPositiveButton("play again", (dialog, which) -> reset(c))
+                    setPositiveButton("play again", (dialog, which) -> {
+                        reset(c);
+                        if(getIntent().getBooleanExtra("online", false))
+                            bReceiver.bConnection.write("again".getBytes());
+                    })
                     .show();
             runOnUiThread(() -> sb.setProgress(sb.getProgress()-1));
         }
@@ -241,6 +336,7 @@ public class GameLogic extends AppCompatActivity
         super.onDestroy();
         if(getIntent().getBooleanExtra("online", false))
         {
+            bReceiver.bConnection.disconnect();
             unregisterReceiver(bReceiver);
             if(bAdapter != null) bAdapter.disable();
             bAdapter = null;
@@ -258,5 +354,27 @@ public class GameLogic extends AppCompatActivity
         startActivity(i); //Return to home view
 
         finish();
+    }
+
+
+    private int invertPlayer(int num)
+    {
+        if(num == 1) return 2;
+        else if( num == 2) return 1;
+        return num;
+    }
+
+    private void turnVisibility(int num)
+    {
+        if(num == 1)
+        {
+            findViewById(R.id.t2).setVisibility(View.VISIBLE);
+            findViewById(R.id.t1).setVisibility(View.INVISIBLE);
+        }
+        else
+        {
+            findViewById(R.id.t1).setVisibility(View.VISIBLE);
+            findViewById(R.id.t2).setVisibility(View.INVISIBLE);
+        }
     }
 }

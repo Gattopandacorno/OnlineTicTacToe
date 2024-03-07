@@ -7,7 +7,10 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
+
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -200,8 +203,6 @@ public class BluetoothConnection
         }
     }
 
-
-
     /**
      * Start the service. Specifically AcceptThread to begin the server-side.
      */
@@ -245,6 +246,7 @@ public class BluetoothConnection
         private final BluetoothSocket socket;
         private final InputStream IStream;
         private final OutputStream OStream;
+        private final Context ctx;
 
         /**
          * This is the constructor like AcceptThread and ConnectThread.
@@ -252,8 +254,9 @@ public class BluetoothConnection
          * @param socket This is the socket connection between the two devices.
          *               The devices are already connected at this point.
          */
-        public ConnectedThread(BluetoothSocket socket)
+        public ConnectedThread(BluetoothSocket socket, Context ctx)
         {
+            this.ctx = ctx;
             Log.d(TAG, "ConnectedThread Starting.");
 
             this.socket = socket;
@@ -262,17 +265,19 @@ public class BluetoothConnection
 
             // Dismiss the progress bar when connection is established because the devices can now communicate.
             try{Progress.dismissDialog();}
-            catch (NullPointerException e){e.printStackTrace();}
+            catch (NullPointerException e){Log.d(TAG,"dismiss dialog " + e);}
 
 
             try {
                 tmpIn = this.socket.getInputStream();
                 tmpOut = this.socket.getOutputStream();
             }
-            catch (IOException e) {e.printStackTrace();}
+            catch (IOException e) {Log.d(TAG,"retrieve streams " + e);}
 
             IStream = tmpIn;
             OStream = tmpOut;
+
+            write("start".getBytes());
         }
 
         /**
@@ -280,6 +285,7 @@ public class BluetoothConnection
          */
         public void run()
         {
+
             read();
         }
 
@@ -291,6 +297,7 @@ public class BluetoothConnection
             byte[] buffer = new byte[1024];  // buffer store for the stream
 
             int bytes; // bytes returned from read()
+            Intent i = new Intent("sendmsg");
 
             // Keep listening
             while (true)
@@ -299,7 +306,9 @@ public class BluetoothConnection
                 try {
                     bytes = IStream.read(buffer);
                     String msg = new String(buffer, 0, bytes);
-                    Log.d(TAG, "InputStream: " + msg);
+
+                    i.putExtra("msg", msg);
+                    LocalBroadcastManager.getInstance(this.ctx).sendBroadcast(i);
                 }
 
                 catch (IOException e)
@@ -314,16 +323,16 @@ public class BluetoothConnection
         public void write(byte[] bytes)
         {
             String text = new String(bytes, Charset.defaultCharset());
-            Log.d(TAG, "write: Writing to outputstream: " + text);
+            Log.d(TAG, "Writing to output: " + text);
             try {OStream.write(bytes);}
-            catch (IOException e) {Log.e(TAG, "write: Error writing to output stream. " + e.getMessage() );}
+            catch (IOException e) {Log.e(TAG, "Error writing to output. " + e.getMessage() );}
         }
 
         /* Call this from the main activity to shutdown the connection */
         public void cancel()
         {
             try {socket.close();}
-            catch (IOException e) { e.printStackTrace();}
+            catch (IOException e) { Log.d("SOCKET", "error closing the socket " + e);}
         }
     }
 
@@ -332,7 +341,7 @@ public class BluetoothConnection
         Log.d(TAG, "connected: Starting.");
 
         // Start the thread to manage the connection and perform transmissions
-        connectedThr = new ConnectedThread(mmSocket);
+        connectedThr = new ConnectedThread(mmSocket, this.ctx);
         connectedThr.start();
     }
 
@@ -346,13 +355,29 @@ public class BluetoothConnection
     {
         // Synchronize a copy of the ConnectedThread
         Log.d(TAG, "write: Write Called.");
-        //perform the write
+
         connectedThr.write(out);
     }
 
     public void disconnect()
     {
         // TODO: tell the other device to disconnect
+        write("disconnect".getBytes());
         connectedThr.cancel();
     }
+
+    /**
+     * This function is used to retrieve the state of the connection of the device.
+     * When it is not yet connected or it is disconnected the return should be false.
+     *
+     * @return true if the connection thread is running/alive.
+     *         The method isAlive is true only when the device are connected and is reading the messages
+     *         from other devices.
+     *
+     */
+    public boolean isConnected()
+    {
+        return connectedThr.isAlive();
+    }
+
 }
