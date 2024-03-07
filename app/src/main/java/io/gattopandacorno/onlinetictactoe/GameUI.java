@@ -318,7 +318,7 @@ public class GameUI extends AppCompatActivity
     {
         int w = Win(grid);
 
-        SeekBar sb = findViewById(R.id.seekBar); // TODO: find out wat makes the alert not popping up
+        SeekBar sb = findViewById(R.id.seekBar);
 
         if (w == 1) // If the winner is the one with the X
         {

@@ -284,6 +284,7 @@ public class BluetoothConnection
         public void run()
         {
             write("start".getBytes());
+            // TODO: find out why only one device is getting the name
 
             read();
         }
@@ -360,7 +361,6 @@ public class BluetoothConnection
 
     public void disconnect()
     {
-        // TODO: tell the other device to disconnect
         write("disconnect".getBytes());
         connectedThr.cancel();
     }
