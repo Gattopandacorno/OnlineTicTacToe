@@ -19,7 +19,7 @@ public class Login extends AppCompatActivity
     {
         super.onCreate(savedInstanceState);
 
-        Intent i = new Intent(this, GameUI.class);
+        Intent i = new Intent(this, GameLogic.class);
 
         //If the game is in local mode the players have to compile formlocal
         if (!getIntent().getBooleanExtra("online", false))
