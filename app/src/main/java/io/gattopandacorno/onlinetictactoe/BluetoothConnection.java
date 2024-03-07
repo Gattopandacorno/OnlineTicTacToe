@@ -66,7 +66,7 @@ public class BluetoothConnection
             BluetoothServerSocket tmp = null;
 
             // ProgressDialog is deprecated so i searched a workaround using a simple ProgressBar
-            Progress.showDialog(ctx, "Waiting...");
+            Progress.showDialog(ctx, "Waiting connection...");
 
             // Create a new listening server socket
             try{
@@ -98,7 +98,10 @@ public class BluetoothConnection
                 Log.d(TAG, "RFCOMM server socket accepted connection.");
 
             }
-            catch (IOException e){Log.e(TAG, "AcceptThread: " + e.getMessage() );}
+            catch (IOException e)
+            {
+                Log.e(TAG, "AcceptThread: " + e.getMessage() );
+            }
 
             // When the connection is made (socket not null)
             if(bSocket != null)
@@ -283,9 +286,6 @@ public class BluetoothConnection
          */
         public void run()
         {
-            write("start".getBytes());
-            // TODO: find out why only one device is getting the name
-
             read();
         }
 
@@ -298,6 +298,7 @@ public class BluetoothConnection
 
             int bytes; // bytes returned from read()
             Intent i = new Intent("sendmsg");
+            write("start".getBytes());
 
             // Keep listening
             while (true)

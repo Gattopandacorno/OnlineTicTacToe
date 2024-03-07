@@ -42,6 +42,7 @@ public class GameUI extends AppCompatActivity
     private int numPlayer;
     private BluetoothReceiver bReceiver;
     private BluetoothAdapter bAdapter;
+    private AlertDialog ad = null;
 
 
     @SuppressLint({"SetTextI18n", "UseCompatLoadingForDrawables", "ClickableViewAccessibility", "MissingPermission"})
@@ -70,7 +71,7 @@ public class GameUI extends AppCompatActivity
         registerReceiver(bReceiver, fil);
 
         bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
-        bAdapter.setName("HT");
+
 
         // If the game mode is local
         if (!getIntent().getBooleanExtra("online", false))
@@ -128,7 +129,7 @@ public class GameUI extends AppCompatActivity
 
             // Ask if the device can be discoverable so it can be found and then paired/connected with the other player
             Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 800);
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
 
             startActivity(discoverableIntent);
             bReceiver.startServer();
@@ -144,6 +145,7 @@ public class GameUI extends AppCompatActivity
 
             else
             {
+                bAdapter.setName("HT");
                 d = getDrawable(R.drawable.x);
                 numPlayer = 1;
             }
@@ -177,12 +179,11 @@ public class GameUI extends AppCompatActivity
         }
 
 
-
-
         // Setting click listener for when reset/play again button is clicked
         findViewById(R.id.reset).setOnClickListener(v -> {
             reset(cells);
-            if(getIntent().getBooleanExtra("online", false)) bReceiver.sendMsg("again");
+            if(getIntent().getBooleanExtra("online", false))
+                bReceiver.sendMsg("again");
 
         });
 
@@ -239,7 +240,11 @@ public class GameUI extends AppCompatActivity
             }
 
             // If the message is again it means that the board will be resets
-            else if(msg.equals("again")) reset(cells);
+            else if(msg.equals("again"))
+            {
+                if(ad != null) ad.dismiss();
+                reset(cells);
+            }
 
             // If the message is start then the two devices should send their player's name
             else if(msg.equals("start"))
@@ -259,10 +264,11 @@ public class GameUI extends AppCompatActivity
                 else
                 {
                     tmp = findViewById(R.id.tp1);
-                    getIntent().putExtra("playerName2", msg);
+                    getIntent().putExtra("playerName1", msg);
                 }
 
                 tmp.setText(msg); // Sets the name
+
             }
         }
     };
@@ -275,7 +281,7 @@ public class GameUI extends AppCompatActivity
      * @param grid Is the numeric representation of the game's situation.
      *             It is used to better control when a player is winning or not.
      */
-    private int Win(int[] grid) // TODO: find why some combination don't works
+    private int Win(int[] grid) // TODO: find why some combinations don't work
     {
         for (int[] ints : winComb)
             if (grid[ints[0]] == grid[ints[1]] && grid[ints[1]] == grid[ints[2]])
@@ -322,7 +328,7 @@ public class GameUI extends AppCompatActivity
 
         if (w == 1) // If the winner is the one with the X
         {
-            new AlertDialog.Builder(this).
+            ad = new AlertDialog.Builder(this).
                     setMessage(getIntent().getStringExtra("playerName1") + " WON THE GAME").
                     setPositiveButton("play again", (dialog, which) -> {
                         reset(c);
@@ -337,7 +343,7 @@ public class GameUI extends AppCompatActivity
 
         else if (w == 2) // If the winner is the one with the O
         {
-            new AlertDialog.Builder(this).
+            ad = new AlertDialog.Builder(this).
                     setMessage(getIntent().getStringExtra("playerName2") + " WON THE GAME").
                     setPositiveButton("play again", (dialog, which) -> {
                         reset(c);

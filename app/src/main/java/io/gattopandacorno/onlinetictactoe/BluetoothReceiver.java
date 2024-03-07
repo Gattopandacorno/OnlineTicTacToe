@@ -125,4 +125,9 @@ public class BluetoothReceiver extends BroadcastReceiver
     {
         bConnection.start();
     }
+
+    public boolean isConnected()
+    {
+        return bConnection.isConnected();
+    }
 }
