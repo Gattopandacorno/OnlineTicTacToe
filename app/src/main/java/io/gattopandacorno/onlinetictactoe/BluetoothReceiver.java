@@ -8,21 +8,30 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 import java.util.Objects;
+
 public class BluetoothReceiver extends BroadcastReceiver
 {
 
-    // Not sure if this is the correct thing to do to pass the device and socket to the activity
-    // sendBroadcast seems to be only for API 31+
-    public BluetoothDevice dev = null;
+    private final BluetoothConnection bConnection;
 
-    public BluetoothConnection bConnection;
-
-     public BluetoothReceiver(Context ctx)
+    public BluetoothReceiver(Context ctx)
      {
          bConnection = new BluetoothConnection(ctx);
      }
 
 
+    /**
+     * This receiver retrieve 3 bluetooth event.
+     * - The first case is the most important one.
+     *   When a device with the specific name HT is found by this device then it starts the client
+     *   to pair (if not already) and connect the two.
+     * - The ACTION_STATE_CHANGED is used to control the internal state of the device's bluetooth.
+     * - The ACTION_SCAN_MODE_CHANGED is used to control when the device is connecting or discoverable.
+     *
+     *
+     * @param context The Context in which the receiver is running.
+     * @param intent The Intent being received.
+     */
     @SuppressLint("MissingPermission")
     @Override
     public void onReceive(Context context, Intent intent)
@@ -86,5 +95,34 @@ public class BluetoothReceiver extends BroadcastReceiver
                         break;
                 }
         }
+    }
+
+    /**
+     * This method writes to the other devices using bluetooth connection.
+     * This is done to privatize bConnection to avoid the direct use..
+     *
+     * @param msg This string is the message to send to the other device.
+     */
+    public void sendMsg(String msg)
+    {
+        bConnection.write(msg.getBytes());
+    }
+
+    /**
+     * This method disconnects the devices connected with bluetooth socket.
+     * This is done to privatize bConnection to avoid the direct use.
+     */
+    public void disconnect()
+    {
+        bConnection.disconnect();
+    }
+
+    /**
+     * This method start the bluetooth's server thread.
+     * This is done to privatize bConnection to avoid the direct use.
+     */
+    public void startServer()
+    {
+        bConnection.start();
     }
 }
