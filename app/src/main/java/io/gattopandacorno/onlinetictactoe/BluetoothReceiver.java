@@ -49,7 +49,7 @@ public class BluetoothReceiver extends BroadcastReceiver
 
             case BluetoothAdapter.ACTION_STATE_CHANGED:
 
-                switch( intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, 10))
+                switch(intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, 10))
                 {
                     case BluetoothAdapter.STATE_OFF:
                         Log.d("SOCKET", "STATE OFF");

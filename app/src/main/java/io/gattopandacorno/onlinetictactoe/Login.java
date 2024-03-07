@@ -58,6 +58,7 @@ public class Login extends AppCompatActivity
 
             // Set click listener for when Join button is touched
             findViewById(R.id.host).setOnClickListener(v -> {
+
                 if (!t.getText().toString().isEmpty())
                     i.putExtra("playerName1", t.getText().toString());
                 else i.putExtra("playerName1", "PLAYER1");
@@ -72,6 +73,7 @@ public class Login extends AppCompatActivity
 
             // Set click listener for when Join button is touched
             findViewById(R.id.join).setOnClickListener(v -> {
+
                 if (!t.getText().toString().isEmpty())
                     i.putExtra("playerName2", t.getText().toString());
                 else i.putExtra("playerName2", "PLAYER2");

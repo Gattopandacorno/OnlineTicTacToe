@@ -1,10 +1,7 @@
 package io.gattopandacorno.onlinetictactoe;
 
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
@@ -14,6 +11,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
+import android.location.LocationManager;
 import android.os.Bundle;
 
 
@@ -31,26 +29,7 @@ public class MainActivity extends AppCompatActivity
         findViewById(R.id.localButton).setOnClickListener(v-> startLogin(false));
 
         // Set click listener for when Play multiplayer game button is touched
-        findViewById(R.id.multiButton).setOnClickListener(v -> {
-
-            // If the bluetooth is not enabled the user must turn it on to play the online game
-            if(!((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter().isEnabled())
-            {
-                // Advise the player about the usage of bluetooth
-                new AlertDialog.Builder(this).
-                        setMessage("If you want to access the online game, you must use your bluetooth. " +
-                                   "This is done to search and connect with the other player. Click 'OK' to turn it on.")
-                        .setPositiveButton("OK", (dialog, which) -> {
-                            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                            BTlauncher.launch(enableBtIntent);})
-                        .show();
-            }
-
-            // If the bluetooth is already on the user can access the online Login
-            else
-                startLogin(true);
-
-        });
+        findViewById(R.id.multiButton).setOnClickListener(v -> {startLogin(true);});
     }
 
 
@@ -60,7 +39,7 @@ public class MainActivity extends AppCompatActivity
      *
      * @param resultCode The integer result code returned by the child activity.
      */
-    ActivityResultLauncher<Intent> BTlauncher = registerForActivityResult(
+    ActivityResultLauncher<Intent> launcherPermission = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == Activity.RESULT_OK)
                     startLogin(true);
@@ -79,10 +58,40 @@ public class MainActivity extends AppCompatActivity
      */
     private void startLogin(boolean online)
     {
-        Intent i = new Intent(this, Login.class);
-        i.putExtra("online", online);
+        // If the bluetooth is not enabled the user must turn it on to play the online game
+        if(online && !((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter().isEnabled())
+        {
+            // Advise the player about the usage of bluetooth
+            new AlertDialog.Builder(this).
+                    setMessage("If you want to access the online game, you must use your bluetooth. " +
+                            "This is done to search and connect with the other player. Click 'OK' to turn it on.")
+                    .setPositiveButton("OK", (dialog, which) -> {
+                        Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                        launcherPermission.launch(enableBtIntent);})
+                    .show();
+        }
 
-        startActivity(i); //Start the Login activity
-        finish();
+        // If the bluetooth is not enabled the user must turn it on to play the online game
+        else if(online && !((LocationManager) getSystemService(Context.LOCATION_SERVICE)).isProviderEnabled(LocationManager.GPS_PROVIDER))
+        {
+            // Advise the player about the usage of bluetooth
+            new AlertDialog.Builder(this).
+                    setMessage("If you want to access the online game, you must use your location. " +
+                            "This is done to search near devices like the one of the other player. Click 'OK' to turn it on.")
+                    .setPositiveButton("OK", (dialog, which) -> {
+                        Intent enableLtIntent = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                        launcherPermission.launch(enableLtIntent);})
+                    .show();
+        }
+
+        // If the bluetooth is already on the user can access the online Login
+        else
+        {
+            Intent i = new Intent(this, Login.class);
+            i.putExtra("online", online);
+
+            startActivity(i); //Start the Login activity
+            finish();
+        }
     }
 }
