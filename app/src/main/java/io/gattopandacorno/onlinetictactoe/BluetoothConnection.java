@@ -276,8 +276,6 @@ public class BluetoothConnection
 
             IStream = tmpIn;
             OStream = tmpOut;
-
-            write("start".getBytes());
         }
 
         /**
@@ -285,6 +283,7 @@ public class BluetoothConnection
          */
         public void run()
         {
+            write("start".getBytes());
 
             read();
         }
