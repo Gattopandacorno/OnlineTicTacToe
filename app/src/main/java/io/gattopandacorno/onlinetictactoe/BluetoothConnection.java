@@ -362,7 +362,8 @@ public class BluetoothConnection
 
     public void disconnect()
     {
-        write("disconnect".getBytes());
+        // It notify the disconnection only if the other device is connected
+        if(connectedThr.socket.isConnected()) write("disconnect".getBytes());
         connectedThr.cancel();
     }
 

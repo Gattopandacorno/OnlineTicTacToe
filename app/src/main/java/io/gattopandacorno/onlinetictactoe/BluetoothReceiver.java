@@ -41,7 +41,7 @@ public class BluetoothReceiver extends BroadcastReceiver
             case BluetoothDevice.ACTION_FOUND:
                 Log.d("SOCKET", "action found");
 
-                // Discovery has found a device. Get the BluetoothDevice
+                // Discovery has found a device
                 BluetoothDevice tmp = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
                 if(tmp != null && tmp.getName().equals("HT"))
