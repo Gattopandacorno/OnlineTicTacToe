@@ -56,12 +56,14 @@ public class Login extends AppCompatActivity
                     Manifest.permission.ACCESS_COARSE_LOCATION,
                     Manifest.permission.BLUETOOTH_ADMIN}, 255);
 
+            i.putExtra("playerName1", "PLAYER1");
+            i.putExtra("playerName2", "PLAYER2");
+
             // Set click listener for when Join button is touched
             findViewById(R.id.host).setOnClickListener(v -> {
 
                 if (!t.getText().toString().isEmpty())
                     i.putExtra("playerName1", t.getText().toString());
-                else i.putExtra("playerName1", "PLAYER1");
 
                 i.putExtra("online", true);
                 i.putExtra("host", true);
@@ -76,7 +78,7 @@ public class Login extends AppCompatActivity
 
                 if (!t.getText().toString().isEmpty())
                     i.putExtra("playerName2", t.getText().toString());
-                else i.putExtra("playerName2", "PLAYER2");
+
 
                 i.putExtra("online", true);
                 i.putExtra("host", false);
