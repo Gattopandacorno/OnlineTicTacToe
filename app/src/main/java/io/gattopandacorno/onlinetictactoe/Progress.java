@@ -1,21 +1,29 @@
 package io.gattopandacorno.onlinetictactoe;
+
 import android.content.Context;
 import android.graphics.Color;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 
+/**
+ * This class is used to replace the deprecated ProgressDialog.
+ */
 public class Progress
 {
 
     private static AlertDialog dialog = null;
 
+    /**
+     * It will show the indeterminate progress with the given message.
+     *
+     * @param ctx This is the application context.
+     * @param msg This is the String to display while waiting the progress to finish.
+     */
     public static void showDialog(Context ctx, String msg)
     {
         if(dialog == null)
@@ -42,7 +50,7 @@ public class Progress
             ll.addView(tvText);
 
             AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
-            builder.setCancelable(false);
+            builder.setCancelable(false); // The user cannot dismiss it with a touch
             builder.setView(ll);
 
             dialog = builder.create();
@@ -50,14 +58,10 @@ public class Progress
         }
     }
 
-    public static  boolean isVisible()
-    {
-        if(dialog != null)
-            return dialog.isShowing();
-        else
-            return false;
-    }
-
+    /**
+     * It is used to dismiss the indeterminate progress.
+     * If it is not used the user cannot dismiss it with touch event.
+     */
     public static  void dismissDialog()
     {
         if(dialog != null)

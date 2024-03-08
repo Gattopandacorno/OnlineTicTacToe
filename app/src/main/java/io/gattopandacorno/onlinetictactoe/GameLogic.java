@@ -45,6 +45,8 @@ public class GameLogic extends AppCompatActivity
     private AlertDialog ad = null;
 
 
+    // The permission check is ignored because if location or bluetooth is not enabled and permitted
+    // the user cannot use the online service
     @SuppressLint({"SetTextI18n", "UseCompatLoadingForDrawables", "ClickableViewAccessibility", "MissingPermission"})
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -133,8 +135,6 @@ public class GameLogic extends AppCompatActivity
 
             startActivity(discoverableIntent);
             bReceiver.startServer();
-
-            // TODO: find out why discovery on oneplus doesn't work
 
             if(!getIntent().getBooleanExtra("host", false))
             {

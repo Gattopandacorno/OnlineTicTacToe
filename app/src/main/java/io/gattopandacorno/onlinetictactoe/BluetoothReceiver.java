@@ -99,7 +99,7 @@ public class BluetoothReceiver extends BroadcastReceiver
 
     /**
      * This method writes to the other devices using bluetooth connection.
-     * This is done to privatize bConnection to avoid the direct use..
+     * This is done to privatize bConnection to avoid the direct use.
      *
      * @param msg This string is the message to send to the other device.
      */
@@ -124,10 +124,5 @@ public class BluetoothReceiver extends BroadcastReceiver
     public void startServer()
     {
         bConnection.start();
-    }
-
-    public boolean isConnected()
-    {
-        return bConnection.isConnected();
     }
 }

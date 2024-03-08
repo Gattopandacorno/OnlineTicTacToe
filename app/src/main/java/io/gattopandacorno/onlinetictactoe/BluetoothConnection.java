@@ -18,6 +18,8 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.UUID;
 
+// This class is highly inspired by @mitchtabian on github and youtube, please check all his tutorial!
+// https://github.com/mitchtabian and https://www.youtube.com/@codingwithmitch
 public class BluetoothConnection
 {
     private static final String TAG = "SOCKET";
