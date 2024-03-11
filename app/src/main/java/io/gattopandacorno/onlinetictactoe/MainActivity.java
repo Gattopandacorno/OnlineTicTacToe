@@ -43,7 +43,6 @@ public class MainActivity extends AppCompatActivity
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == Activity.RESULT_OK)
                     startLogin(true);
-
             });
 
 
