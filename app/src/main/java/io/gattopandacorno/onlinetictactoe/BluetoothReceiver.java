@@ -3,33 +3,35 @@ package io.gattopandacorno.onlinetictactoe;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
-import android.widget.Toast;
-
-import java.io.IOException;
 import java.util.Objects;
-import java.util.UUID;
 
 public class BluetoothReceiver extends BroadcastReceiver
 {
 
-    // Not sure if this is the correct thing to do to pass the device and socket to the activity
-    // sendBroadcast seems to be only for API 31+
-    public BluetoothDevice dev = null;
-    private final UUID uuid;
-    public BluetoothSocket bSocket = null;
+    private final BluetoothConnection bConnection;
 
-    public BluetoothReceiver(String code)
-    {
-        uuid = UUID.nameUUIDFromBytes(code.getBytes());
-        Log.d("SOCKET", "uuid saved in the receiver " + uuid.toString());
-    }
+    public BluetoothReceiver(Context ctx)
+     {
+         bConnection = new BluetoothConnection(ctx);
+     }
 
+
+    /**
+     * This receiver retrieve 3 bluetooth event.
+     * - The first case is the most important one.
+     *   When a device with the specific name HT is found by this device then it starts the client
+     *   to pair (if not already) and connect the two.
+     * - The ACTION_STATE_CHANGED is used to control the internal state of the device's bluetooth.
+     * - The ACTION_SCAN_MODE_CHANGED is used to control when the device is connecting or discoverable.
+     *
+     *
+     * @param context The Context in which the receiver is running.
+     * @param intent The Intent being received.
+     */
     @SuppressLint("MissingPermission")
     @Override
     public void onReceive(Context context, Intent intent)
@@ -39,38 +41,28 @@ public class BluetoothReceiver extends BroadcastReceiver
             case BluetoothDevice.ACTION_FOUND:
                 Log.d("SOCKET", "action found");
 
-                // Discovery has found a device. Get the BluetoothDevice
-                dev = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                // Discovery has found a device
+                BluetoothDevice tmp = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
-                if(dev != null && dev.getName().equals("HT"))
-                {
-                    Log.d("SOCKET", "found device " + dev.getName());
-                    dev.createBond();
-                    dev.fetchUuidsWithSdp();
-
-                    try {
-                        bSocket = dev.createInsecureRfcommSocketToServiceRecord(dev.getUuids()[0].getUuid());
-                        bSocket.connect();
-                    }
-                    catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
-
-                }
-
-                break;
+                if(tmp != null && tmp.getName()!=null && tmp.getName().equals("HT"))
+                    bConnection.startClient(tmp);
 
             case BluetoothAdapter.ACTION_STATE_CHANGED:
 
-                switch( intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, 10))
+                switch(intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, 10))
                 {
                     case BluetoothAdapter.STATE_OFF:
                         Log.d("SOCKET", "STATE OFF");
                         break;
+
                     case BluetoothAdapter.STATE_TURNING_OFF:
                         Log.d("SOCKET", "STATE TURNING OFF");
                         break;
+
                     case BluetoothAdapter.STATE_ON:
                         Log.d("SOCKET", "STATE ON");
                         break;
+
                     case BluetoothAdapter.STATE_TURNING_ON:
                         Log.d("SOCKET", "STATE TURNING ON");
                         break;
@@ -84,20 +76,85 @@ public class BluetoothReceiver extends BroadcastReceiver
                     case BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE:
                         Log.d("SOCKET", "Discoverability Enabled.");
                         break;
+
                     //Device not in discoverable mode
                     case BluetoothAdapter.SCAN_MODE_CONNECTABLE:
                         Log.d("SOCKET", "Discoverability Disabled. Able to receive connections.");
                         break;
+
                     case BluetoothAdapter.SCAN_MODE_NONE:
                         Log.d("SOCKET", "Discoverability Disabled. Not able to receive connections.");
                         break;
+
                     case BluetoothAdapter.STATE_CONNECTING:
                         Log.d("SOCKET", "Connecting....");
                         break;
+
                     case BluetoothAdapter.STATE_CONNECTED:
                         Log.d("SOCKET", "Connected.");
                         break;
                 }
         }
+    }
+
+    /**
+     * This method writes to the other devices using bluetooth connection.
+     * This is done to privatize bConnection to avoid the direct use.
+     *
+     * @param msg This string is the message to send to the other device.
+     */
+    public void sendMsg(String msg)
+    {
+        bConnection.write(msg.getBytes());
+    }
+
+    /**
+     * This method disconnects the devices connected with bluetooth socket.
+     * This is done to privatize bConnection to avoid the direct use.
+     */
+    public void disconnect()
+    {
+        bConnection.disconnect();
+    }
+
+    /**
+     * This method start the bluetooth's server thread.
+     * This is done to privatize bConnection to avoid the direct use.
+     */
+    public void startServer()
+    {
+        bConnection.start();
+    }
+
+    /**
+     * Start bluetooth discovery.
+     * The discovery was performed by another adapter in GameLogic,
+     * in order to not have duplicates i think its easier to get the adapter through receiver and connection.
+     */
+    @SuppressLint("MissingPermission")
+    public void startDiscovery()
+    {
+        bConnection.getAdapter().startDiscovery();
+    }
+
+    /**
+     * Set the name seen by searching bluetooth devices.
+     * Like the start discovery it was performed by an adapter duplicate.
+     * The default name to make the searching easier is HT (it stands for host tictactoe).
+     */
+    @SuppressLint("MissingPermission")
+    public void setDeviceName()
+    {
+        bConnection.getAdapter().setName("HT");
+    }
+
+    /**
+     * Disables device's bluetooth.
+     * Like the start discovery and setName it was performed by an adapter duplicate.
+     */
+    @SuppressLint("MissingPermission")
+    public void disableBluetooth()
+    {
+        bConnection.getAdapter().disable();
     }
 }

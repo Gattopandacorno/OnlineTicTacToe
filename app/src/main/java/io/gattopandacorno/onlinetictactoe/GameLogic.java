@@ -5,30 +5,23 @@ import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothServerSocket;
-import android.bluetooth.BluetoothSocket;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import java.io.IOException;
 import java.util.Objects;
-import java.util.UUID;
-
 
 
 public class GameLogic extends AppCompatActivity
@@ -44,12 +37,14 @@ public class GameLogic extends AppCompatActivity
 
     private boolean turn = true;
 
+    private ImageView[] cells;
+    private int numPlayer;
+    private BluetoothReceiver bReceiver;
+    private AlertDialog ad;
 
-    private BluetoothReceiver bReceiver = new BluetoothReceiver("a");
-    private BluetoothAdapter bAdapter;
-    private BluetoothSocket bSocket = null;
 
-
+    // The permission check is ignored because if location or bluetooth is not enabled and permitted
+    // the user cannot use the online service
     @SuppressLint({"SetTextI18n", "UseCompatLoadingForDrawables", "ClickableViewAccessibility", "MissingPermission"})
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -61,7 +56,7 @@ public class GameLogic extends AppCompatActivity
         findViewById(R.id.t1).setVisibility(View.VISIBLE);
         findViewById(R.id.t2).setVisibility(View.INVISIBLE);
 
-        ImageView[] cells = {findViewById(R.id.i0), findViewById(R.id.i1), findViewById(R.id.i2),
+        cells = new ImageView[] {findViewById(R.id.i0), findViewById(R.id.i1), findViewById(R.id.i2),
                 findViewById(R.id.i3), findViewById(R.id.i4), findViewById(R.id.i5),
                 findViewById(R.id.i6), findViewById(R.id.i7), findViewById(R.id.i8)};
 
@@ -70,11 +65,11 @@ public class GameLogic extends AppCompatActivity
         IntentFilter fil = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         fil.addAction(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
         fil.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        fil.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
 
-        if(getIntent().getStringExtra("code") != null)
-            bReceiver = new BluetoothReceiver(getIntent().getStringExtra("code"));
-
+        bReceiver = new BluetoothReceiver(this);
         registerReceiver(bReceiver, fil);
+
 
         // If the game mode is local
         if (!getIntent().getBooleanExtra("online", false))
@@ -82,7 +77,7 @@ public class GameLogic extends AppCompatActivity
             tp1.setText(getIntent().getStringExtra("playerName1"));
             tp2.setText(getIntent().getStringExtra("playerName2"));
 
-            for (int i = 0; i < 9; i++)
+            for (int i = 0; i < cells.length; i++)
             {
                 int j = i;
                 cells[i].setOnTouchListener((v, event) -> {
@@ -114,51 +109,86 @@ public class GameLogic extends AppCompatActivity
                         runOnUiThread(() -> AlertWin(cells, grid));
                         
                         turn = !turn;
+                        return true;
                     }
+
                     return false;
                 });
             }
         }
 
-        // If the game is online and the player is hosting
-        else if(getIntent().getBooleanExtra("host", false))
+        // If the game is online
+        else
         {
             tp1.setText(getIntent().getStringExtra("playerName1"));
-
-            bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
+            tp2.setText(getIntent().getStringExtra("playerName2"));
+            Drawable d;
+            LocalBroadcastManager.getInstance(this).registerReceiver(getMsg , new IntentFilter("sendmsg"));
 
             // Ask if the device can be discoverable so it can be found and then paired/connected with the other player
             Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 800);
-
-            // Set the name for the host player
-            bAdapter.setName("HT");
+            discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
 
             startActivity(discoverableIntent);
-            new Thread(() -> {
-                try {Server();}
-                catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
-            });
+            bReceiver.startServer();
+
+            if(!getIntent().getBooleanExtra("host", false))
+            {
+                tp2.setText(getIntent().getStringExtra("playerName2"));
+                d = getDrawable(R.drawable.o);
+                numPlayer = 2;
+                turn = false;
+                bReceiver.startDiscovery();
+            }
+
+            else
+            {
+                bReceiver.setDeviceName();
+                d = getDrawable(R.drawable.x);
+                numPlayer = 1;
+            }
+
+            for (int i = 0; i < cells.length; i++)
+            {
+                int j = i;
+                cells[i].setOnTouchListener((v, event) -> {
+
+                    // Only if the image/cell is touched AND it is not occupied
+                    if (event.getAction() == MotionEvent.ACTION_DOWN && grid[j] == 0 && turn)
+                    {
+                        cells[j].setImageDrawable(d);
+                        grid[j] = numPlayer;
+
+                        // Create a thread to control if somebody win
+                        // Thread cannot be used because after calling Win it shows an alert dialog
+                        runOnUiThread(() -> AlertWin(cells, grid));
+                        new Thread(() -> bReceiver.sendMsg(String.valueOf(j))).start();
+
+                        runOnUiThread(() -> turnVisibility(numPlayer));
+
+                        turn = !turn;
+
+                        return true;
+                    }
+
+                    return false;
+                });
+            }
         }
 
-        // If the game is online and the player is joining another player (not host)
-        else
-        {
-            tp2.setText(getIntent().getStringExtra("playerName2"));
-            bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
 
-            //new Thread(() -> {
-                try {Client();}
-                catch (IOException e) {Log.d("SOCKET", String.valueOf(e));}
-            //});
-        }
+        // Setting click listener for when reset/play again button is clicked
+        findViewById(R.id.reset).setOnClickListener(v -> {
+            reset(cells);
+            if(getIntent().getBooleanExtra("online", false))
+                bReceiver.sendMsg("again");
 
-        //Setting click listener for when reset/play again button is clicked
-        findViewById(R.id.reset).setOnClickListener(v -> reset(cells));
+        });
 
-        //Setting click listener when return to home button is clicked
+        // Setting click listener when return to home button is clicked
         findViewById(R.id.home).setOnClickListener(v -> returnHome());
 
+        // Avoids the slide of the win streak seekbar by the users
         findViewById(R.id.seekBar).setOnTouchListener((v, event) -> true);
 
 
@@ -169,16 +199,77 @@ public class GameLogic extends AppCompatActivity
             {
                 new AlertDialog.Builder(GameLogic.this)
                         .setMessage("Are you sure you want to leave the game?")
-                        .setNegativeButton("ok", (dialog, which) -> {
-
-                            // TODO: remove the room if it was an online game
-                            unregisterReceiver(bReceiver);
-
-                           returnHome();
-                        }).show();
+                        .setNegativeButton("ok", (dialog, which) -> returnHome()).show();
             }
         });
     }
+
+    /**
+     * This receiver is used to get the messages from the bConnection thread.
+     * Is used to sync the game:
+     * EX. when a player receives a number n it means the other one finished the turn.
+     *     His/Her move will be the one in the n position.
+     */
+    BroadcastReceiver getMsg = new BroadcastReceiver() {
+        @SuppressLint("UseCompatLoadingForDrawables")
+        @Override
+        public void onReceive(Context context, Intent intent)
+        {
+            String msg = intent.getStringExtra("msg");
+
+            // If the message is null or it doesn't contain text it will do nothing
+            if(msg == null || msg.equals(" ")) return;
+
+            // If the message is disconnect it means the other device is disconnected
+            else if(msg.equals("disconnect")) returnHome();
+
+            // The number means that the other device finished the turn so an UI update should be performed
+            else if(msg.matches("^(\\d)+$"))
+            {
+                turn    = true;
+                int i   = Integer.parseInt(msg);
+                grid[i] = invertPlayer(numPlayer);
+                if(invertPlayer(numPlayer) == 1) cells[i].setImageDrawable(getDrawable(R.drawable.x));
+                else cells[i].setImageDrawable(getDrawable(R.drawable.o));
+
+                runOnUiThread(() -> AlertWin(cells, grid));
+
+                turnVisibility(invertPlayer(numPlayer));
+            }
+
+            // If the message is again it means that the board will be resets
+            else if(msg.equals("again"))
+            {
+                if(ad != null) ad.dismiss();
+                reset(cells);
+            }
+
+            // If the message is start then the two devices should send their player's name
+            else if(msg.equals("start"))
+                bReceiver.sendMsg(Objects.requireNonNull(getIntent().getStringExtra("playerName" + numPlayer)));
+
+            // The 'default' option should be when the message is the player's name
+            else
+            {
+                // The textView with the name of the other player will be updated
+                TextView tmp;
+                if(numPlayer==1)
+                {
+                    tmp = findViewById(R.id.tp2);
+                    getIntent().putExtra("playerName2", msg);
+                }
+
+                else
+                {
+                    tmp = findViewById(R.id.tp1);
+                    getIntent().putExtra("playerName1", msg);
+                }
+
+                tmp.setText(msg); // Sets the name
+
+            }
+        }
+    };
 
     /**
      * Control if there is a winner in the game, this is done with the winning combination matrix
@@ -188,10 +279,10 @@ public class GameLogic extends AppCompatActivity
      * @param grid Is the numeric representation of the game's situation.
      *             It is used to better control when a player is winning or not.
      */
-    private int Win(int[] grid) // TODO: find why some combination don't works
+    private int Win(int[] grid)
     {
         for (int[] ints : winComb)
-            if (grid[ints[0]] == grid[ints[1]] && grid[ints[1]] == grid[ints[2]])
+            if (grid[ints[0]]!=0 && grid[ints[0]] == grid[ints[1]] && grid[ints[1]] == grid[ints[2]])
                 return grid[ints[0]];
 
         return 0;
@@ -206,7 +297,9 @@ public class GameLogic extends AppCompatActivity
     @SuppressLint("UseCompatLoadingForDrawables")
     private void reset(ImageView[] c)
     {
-        turn = true;
+        if(!getIntent().getBooleanExtra("online", false)) turn = true;
+        else turn = (numPlayer==1);
+
         findViewById(R.id.t1).setVisibility(View.VISIBLE);
         findViewById(R.id.t2).setVisibility(View.INVISIBLE);
 
@@ -229,13 +322,17 @@ public class GameLogic extends AppCompatActivity
     {
         int w = Win(grid);
 
-        SeekBar sb = findViewById(R.id.seekBar); // TODO: find out wat makes the alert not popping up
+        SeekBar sb = findViewById(R.id.seekBar);
 
         if (w == 1) // If the winner is the one with the X
         {
-            new AlertDialog.Builder(this).
+            ad = new AlertDialog.Builder(this).
                     setMessage(getIntent().getStringExtra("playerName1") + " WON THE GAME").
-                    setPositiveButton("play again", (dialog, which) -> reset(c))
+                    setPositiveButton("play again", (dialog, which) -> {
+                        reset(c);
+                        if(getIntent().getBooleanExtra("online", false))
+                            bReceiver.sendMsg("again"); // To let the other online player to reset the board.
+                    })
                     .show();
 
             runOnUiThread(() -> sb.setProgress(sb.getProgress() + 1));
@@ -244,25 +341,16 @@ public class GameLogic extends AppCompatActivity
 
         else if (w == 2) // If the winner is the one with the O
         {
-            new AlertDialog.Builder(this).
+            ad = new AlertDialog.Builder(this).
                     setMessage(getIntent().getStringExtra("playerName2") + " WON THE GAME").
-                    setPositiveButton("play again", (dialog, which) -> reset(c))
+                    setPositiveButton("play again", (dialog, which) -> {
+                        reset(c);
+                        if(getIntent().getBooleanExtra("online", false))
+                            bReceiver.sendMsg("again"); // To let the other online player to reset the board.
+                    })
                     .show();
             runOnUiThread(() -> sb.setProgress(sb.getProgress()-1));
         }
-
-    }
-
-    private void WaitOpponent()
-    {
-        runOnUiThread(() -> {
-            ProgressBar pb = new ProgressBar(GameLogic.this);
-            pb.setIndeterminate(true);
-            pb.setPadding(0, 0, 30, 0);
-            pb.setLayoutParams(new ViewGroup.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-            new AlertDialog.Builder(GameLogic.this).setCancelable(false).setView(pb).setMessage("Searching opponent...").create().show();
-        });
 
     }
 
@@ -271,58 +359,15 @@ public class GameLogic extends AppCompatActivity
     protected void onDestroy()
     {
         super.onDestroy();
+
+        // If the game is online we have to disconnect the devices and to unregister the receiver
         if(getIntent().getBooleanExtra("online", false))
         {
+            bReceiver.disconnect();
             unregisterReceiver(bReceiver);
-            if(bAdapter != null) bAdapter.disable();
-            bAdapter = null;
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(getMsg);
+            bReceiver.disableBluetooth();
         }
-    }
-
-
-    /**
-     * Server is the method used by host devices.
-     * It starts a BluetoothServerSocket that listen and then accept for one connection (2nd player).
-     *
-     * @throws IOException When the listRfcommWithServiceRecord is called an exception can be thrown
-     */
-    @SuppressLint("MissingPermission")
-    private void Server() throws IOException
-    {
-        Log.d("SOCKET", "Server method started");
-        UUID uuid = UUID.nameUUIDFromBytes(Objects.requireNonNull(getIntent().getStringExtra("code")).getBytes());
-
-        // Tris online is the unique UUID for the server
-        BluetoothServerSocket bServer = bAdapter.listenUsingInsecureRfcommWithServiceRecord("trisonline", uuid);
-        bSocket = bServer.accept();
-
-        if (bSocket != null)
-        {
-            try {
-                bServer.close(); // After accepting a connection (only two player!)
-                Log.d("SOCKET", "connection accepted, server closed");
-            }
-            catch (IOException e) { Log.d("SOCKET", "not closed " + e);}
-        }
-
-        // TODO: alert if opponent doesn't show up
-    }
-
-    /**
-     * Client is the method used by client devices.
-     * Searches all the other near devices with bluetooth on.
-     * startDiscovery runs in a separate thread and returns after being called.
-     *
-     * @throws IOException When createRfcommSocketToServiceRecord is called an exception can be thrown.
-     */
-    @SuppressLint("MissingPermission")
-    private void Client() throws IOException
-    {
-        Log.d("SOCKET", "client method started");
-
-        bAdapter.startDiscovery();
-
-        bAdapter.cancelDiscovery();
     }
 
     /**
@@ -336,5 +381,42 @@ public class GameLogic extends AppCompatActivity
         startActivity(i); //Return to home view
 
         finish();
+    }
+
+
+    /**
+     * This is useful to know the number of the other player and is used in online mode.
+     * When a player is 1 then the other is 2 or the player is 2 and the other is 1.
+     * A boolean cannot be used (0-1) because the number is used to access an array.
+     *
+     * @param num is the number of the current player that wants to know the number of the other one.
+     * @return int that is the number of the other player.
+     */
+    private int invertPlayer(int num)
+    {
+        if(num == 1) return 2;
+        return 1;
+    }
+
+    /**
+     * Control the player's number and set the right 'Your Turn!' sign.
+     * EX. If the number is 1 then the player who just finished the turn is 1
+     * and the next is player 2 so 'Your Turn!' will be visible under player's 2 name.
+     *
+     * @param num is the player's number, it can only be 1 or 2.
+     */
+    private void turnVisibility(int num)
+    {
+        if(num == 1)
+        {
+            findViewById(R.id.t2).setVisibility(View.VISIBLE);
+            findViewById(R.id.t1).setVisibility(View.INVISIBLE);
+        }
+
+        else
+        {
+            findViewById(R.id.t1).setVisibility(View.VISIBLE);
+            findViewById(R.id.t2).setVisibility(View.INVISIBLE);
+        }
     }
 }

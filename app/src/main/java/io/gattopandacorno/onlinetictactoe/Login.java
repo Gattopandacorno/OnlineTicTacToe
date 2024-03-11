@@ -9,13 +9,11 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.EditText;
-import android.widget.Toast;
-
 
 
 public class Login extends AppCompatActivity
 {
-    @SuppressLint({"SetTextI18n", "NewApi", "MissingPermission"})
+    @SuppressLint({"SetTextI18n", "NewApi"})
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -50,62 +48,44 @@ public class Login extends AppCompatActivity
         else
         {
             setContentView(R.layout.formonline);
-            EditText t = findViewById(R.id.player), code = findViewById(R.id.code);
+            EditText t = findViewById(R.id.player);
 
-            // the app only need to ask location permission because is the only dangerous one used
+            // the app only need to ask location permissions because is the only dangerous one used
             ActivityCompat.requestPermissions(Login.this, new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_COARSE_LOCATION,
                     Manifest.permission.BLUETOOTH_ADMIN}, 255);
 
+            i.putExtra("playerName1", "PLAYER1");
+            i.putExtra("playerName2", "PLAYER2");
+
             // Set click listener for when Join button is touched
             findViewById(R.id.host).setOnClickListener(v -> {
 
-                        String c = code.getText().toString();
+                if (!t.getText().toString().isEmpty())
+                    i.putExtra("playerName1", t.getText().toString());
 
-                        // If the code 'c' is not empty
-                        if (!c.isEmpty()) {
-                            if (!t.getText().toString().isEmpty())
-                                i.putExtra("playerName1", t.getText().toString());
-                            else i.putExtra("playerName1", "PLAYER1");
+                i.putExtra("online", true);
+                i.putExtra("host", true);
 
-                            i.putExtra("online", true);
-                            i.putExtra("host", true);
-                            i.putExtra("code", c);
+                startActivity(i);
+                finish();
 
-                            startActivity(i);
-                            finish();
-                        }
-
-                        else
-                            Toast.makeText(Login.this, "Enter a valid code", Toast.LENGTH_SHORT).show();
             });
 
             // Set click listener for when Join button is touched
             findViewById(R.id.join).setOnClickListener(v -> {
 
-                String c = code.getText().toString();
+                if (!t.getText().toString().isEmpty())
+                    i.putExtra("playerName2", t.getText().toString());
 
-                //If the code is not empty
-                if (!c.isEmpty())
-                {
-                    if (!t.getText().toString().isEmpty())
-                        i.putExtra("playerName2", t.getText().toString());
-                    else i.putExtra("playerName2", "PLAYER2");
 
-                    i.putExtra("online", true);
-                    i.putExtra("host", false);
-                    i.putExtra("code", c);
+                i.putExtra("online", true);
+                i.putExtra("host", false);
 
-                    startActivity(i);
-                    finish();
-                }
-
-                else
-                    Toast.makeText(Login.this, "Enter a valid code", Toast.LENGTH_SHORT).show();
-
+                startActivity(i);
+                finish();
             });
-
         }
 
 
