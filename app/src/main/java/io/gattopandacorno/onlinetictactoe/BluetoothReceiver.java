@@ -44,7 +44,7 @@ public class BluetoothReceiver extends BroadcastReceiver
                 // Discovery has found a device
                 BluetoothDevice tmp = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
-                if(tmp != null && tmp.getName().equals("HT"))
+                if(tmp != null && tmp.getName()!=null && tmp.getName().equals("HT"))
                     bConnection.startClient(tmp);
 
             case BluetoothAdapter.ACTION_STATE_CHANGED:
@@ -124,5 +124,37 @@ public class BluetoothReceiver extends BroadcastReceiver
     public void startServer()
     {
         bConnection.start();
+    }
+
+    /**
+     * Start bluetooth discovery.
+     * The discovery was performed by another adapter in GameLogic,
+     * in order to not have duplicates i think its easier to get the adapter through receiver and connection.
+     */
+    @SuppressLint("MissingPermission")
+    public void startDiscovery()
+    {
+        bConnection.getAdapter().startDiscovery();
+    }
+
+    /**
+     * Set the name seen by searching bluetooth devices.
+     * Like the start discovery it was performed by an adapter duplicate.
+     * The default name to make the searching easier is HT (it stands for host tictactoe).
+     */
+    @SuppressLint("MissingPermission")
+    public void setDeviceName()
+    {
+        bConnection.getAdapter().setName("HT");
+    }
+
+    /**
+     * Disables device's bluetooth.
+     * Like the start discovery and setName it was performed by an adapter duplicate.
+     */
+    @SuppressLint("MissingPermission")
+    public void disableBluetooth()
+    {
+        bConnection.getAdapter().disable();
     }
 }

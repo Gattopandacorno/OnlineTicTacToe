@@ -112,6 +112,7 @@ public class BluetoothConnection
                 cancel();
                 connected(bSocket, dev);
             }
+            // TODO: else you should return to home screen
         }
 
         /**
@@ -126,7 +127,6 @@ public class BluetoothConnection
             try {bServer.close();}
             catch (IOException e) {Log.e(TAG, "Close of server failed. " + e);}
         }
-
     }
 
     /**
@@ -190,6 +190,7 @@ public class BluetoothConnection
                 // Close the socket if there is a problem
                 cancel();
                 Log.d(TAG, "ConnectThread could not connect to UUID: " + uuid);
+                // TODO: go to home screen
             }
 
             connected(mmSocket, dev);
@@ -268,10 +269,6 @@ public class BluetoothConnection
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
 
-            // Dismiss the progress bar when connection is established because the devices can now communicate.
-            try{Progress.dismissDialog();}
-            catch (NullPointerException e){Log.d(TAG,"dismiss dialog " + e);}
-
 
             try {
                 tmpIn = this.socket.getInputStream();
@@ -288,6 +285,7 @@ public class BluetoothConnection
          */
         public void run()
         {
+
             read();
         }
 
@@ -300,8 +298,8 @@ public class BluetoothConnection
 
             int bytes; // bytes returned from read()
             Intent i = new Intent("sendmsg");
-            write("start".getBytes());
 
+            write("start".getBytes());
             // Keep listening
             while (true)
             {
@@ -327,7 +325,7 @@ public class BluetoothConnection
         {
             String text = new String(bytes, Charset.defaultCharset());
             Log.d(TAG, "Writing to output: " + text);
-            try {OStream.write(bytes);}
+            try {if(bytes != null) OStream.write(bytes);}
             catch (IOException e) {Log.e(TAG, "Error writing to output. " + e.getMessage() );}
         }
 
@@ -342,6 +340,9 @@ public class BluetoothConnection
     private void connected(BluetoothSocket mmSocket, BluetoothDevice mmDevice)
     {
         Log.d(TAG, "connected: Starting.");
+
+        // Dismiss the progress bar when connection is established because the devices can now communicate.
+        Progress.dismissDialog();
 
         // Start the thread to manage the connection and perform transmissions
         connectedThr = new ConnectedThread(mmSocket, this.ctx);
@@ -359,7 +360,7 @@ public class BluetoothConnection
         // Synchronize a copy of the ConnectedThread
         Log.d(TAG, "write: Write Called.");
 
-        connectedThr.write(out);
+        if(out != null) connectedThr.write(out);
     }
 
     public void disconnect()
@@ -370,17 +371,13 @@ public class BluetoothConnection
     }
 
     /**
-     * This function is used to retrieve the state of the connection of the device.
-     * When it is not yet connected or it is disconnected the return should be false.
+     * This is a get function that returns the BluetoothAdapter of the device.
      *
-     * @return true if the connection thread is running/alive.
-     *         The method isAlive is true only when the device are connected and is reading the messages
-     *         from other devices.
-     *
+     * @return BluetoothAdapter that contains the device's information about bluetooth,
+     *                          and funs to use it (for ex. disable or startDiscovery)
      */
-    public boolean isConnected()
+    public BluetoothAdapter getAdapter()
     {
-        return connectedThr.isAlive();
+        return bAdapter;
     }
-
 }

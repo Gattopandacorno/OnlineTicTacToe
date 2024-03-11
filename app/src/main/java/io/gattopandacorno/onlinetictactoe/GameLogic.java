@@ -38,11 +38,9 @@ public class GameLogic extends AppCompatActivity
     private boolean turn = true;
 
     private ImageView[] cells;
-
     private int numPlayer;
     private BluetoothReceiver bReceiver;
-    private BluetoothAdapter bAdapter;
-    private AlertDialog ad = null;
+    private AlertDialog ad;
 
 
     // The permission check is ignored because if location or bluetooth is not enabled and permitted
@@ -71,8 +69,6 @@ public class GameLogic extends AppCompatActivity
 
         bReceiver = new BluetoothReceiver(this);
         registerReceiver(bReceiver, fil);
-
-        bAdapter = ((BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
 
 
         // If the game mode is local
@@ -142,12 +138,12 @@ public class GameLogic extends AppCompatActivity
                 d = getDrawable(R.drawable.o);
                 numPlayer = 2;
                 turn = false;
-                bAdapter.startDiscovery();
+                bReceiver.startDiscovery();
             }
 
             else
             {
-                bAdapter.setName("HT");
+                bReceiver.setDeviceName();
                 d = getDrawable(R.drawable.x);
                 numPlayer = 1;
             }
@@ -238,7 +234,7 @@ public class GameLogic extends AppCompatActivity
 
                 runOnUiThread(() -> AlertWin(cells, grid));
 
-                runOnUiThread(() -> turnVisibility(invertPlayer(numPlayer)));
+                turnVisibility(invertPlayer(numPlayer));
             }
 
             // If the message is again it means that the board will be resets
@@ -369,8 +365,8 @@ public class GameLogic extends AppCompatActivity
         {
             bReceiver.disconnect();
             unregisterReceiver(bReceiver);
-            if(bAdapter != null) bAdapter.disable();
-            bAdapter = null;
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(getMsg);
+            bReceiver.disableBluetooth();
         }
     }
 
