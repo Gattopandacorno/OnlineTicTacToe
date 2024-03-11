@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
@@ -41,6 +42,7 @@ public class GameLogic extends AppCompatActivity
     private int numPlayer;
     private BluetoothReceiver bReceiver;
     private AlertDialog ad;
+    private TextView tp1, tp2;
 
 
     // The permission check is ignored because if location or bluetooth is not enabled and permitted
@@ -52,7 +54,7 @@ public class GameLogic extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.gameboard);
         
-        TextView tp1 = findViewById(R.id.tp1), tp2 = findViewById(R.id.tp2);
+        tp1 = findViewById(R.id.tp1); tp2 = findViewById(R.id.tp2);
         findViewById(R.id.t1).setVisibility(View.VISIBLE);
         findViewById(R.id.t2).setVisibility(View.INVISIBLE);
 
@@ -218,7 +220,7 @@ public class GameLogic extends AppCompatActivity
             String msg = intent.getStringExtra("msg");
 
             // If the message is null or it doesn't contain text it will do nothing
-            if(msg == null || msg.equals(" ")) return;
+            if(msg == null) return;
 
             // If the message is disconnect it means the other device is disconnected
             else if(msg.equals("disconnect")) returnHome();
@@ -245,28 +247,27 @@ public class GameLogic extends AppCompatActivity
             }
 
             // If the message is start then the two devices should send their player's name
-            else if(msg.equals("start"))
-                bReceiver.sendMsg(Objects.requireNonNull(getIntent().getStringExtra("playerName" + numPlayer)));
-
+            else if(msg.equals(" "))
+            {
+                String tmp = "playerName" + numPlayer;
+                Log.d("WRITE", tmp);
+                bReceiver.sendMsg(Objects.requireNonNull(getIntent().getStringExtra(tmp)));
+            }
             // The 'default' option should be when the message is the player's name
             else
             {
-                // The textView with the name of the other player will be updated
-                TextView tmp;
+                if(msg.contains("start") && msg.length()>5) msg = msg.split("start")[0];
                 if(numPlayer==1)
                 {
-                    tmp = findViewById(R.id.tp2);
+                    tp2.setText(msg);
                     getIntent().putExtra("playerName2", msg);
                 }
 
                 else
                 {
-                    tmp = findViewById(R.id.tp1);
+                    tp1.setText(msg);
                     getIntent().putExtra("playerName1", msg);
                 }
-
-                tmp.setText(msg); // Sets the name
-
             }
         }
     };
