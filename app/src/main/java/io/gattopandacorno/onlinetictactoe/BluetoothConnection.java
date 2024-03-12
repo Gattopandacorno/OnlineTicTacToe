@@ -285,7 +285,6 @@ public class BluetoothConnection
          */
         public void run()
         {
-
             read();
         }
 
@@ -305,7 +304,7 @@ public class BluetoothConnection
              * this msg will interfere with the name's one so in order to display the players' name
              * this will help more
              * */
-            write(" ".getBytes());
+            write("start".getBytes());
 
             // Keep listening
             while (true)

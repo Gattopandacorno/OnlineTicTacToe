@@ -247,16 +247,19 @@ public class GameLogic extends AppCompatActivity
             }
 
             // If the message is start then the two devices should send their player's name
-            else if(msg.equals(" "))
+            else if(msg.matches("^start$"))
             {
                 String tmp = "playerName" + numPlayer;
                 Log.d("WRITE", tmp);
                 bReceiver.sendMsg(Objects.requireNonNull(getIntent().getStringExtra(tmp)));
             }
+
             // The 'default' option should be when the message is the player's name
             else
             {
-                if(msg.contains("start") && msg.length()>5) msg = msg.split("start")[0];
+                if(msg.contains("start") && msg.length()>5)
+                    msg = msg.replaceAll("^start$", "");
+
                 if(numPlayer==1)
                 {
                     tp2.setText(msg);
