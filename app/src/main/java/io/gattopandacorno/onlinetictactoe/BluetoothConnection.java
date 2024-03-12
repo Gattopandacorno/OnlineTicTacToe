@@ -298,12 +298,7 @@ public class BluetoothConnection
             int bytes; // bytes returned from read()
             Intent i = new Intent("sendmsg");
 
-            /**
-             * This is the first 'handshake', they will send each other this to mean "send me your name"
-             * I previously planned to do so with a more human readable message like "start" but
-             * this msg will interfere with the name's one so in order to display the players' name
-             * this will help more
-             * */
+            //This is the first 'handshake', they will send each other this to mean "send me your name"
             write("start".getBytes());
 
             // Keep listening
