@@ -10,7 +10,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
@@ -20,8 +19,6 @@ import android.widget.TextView;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-
-import java.util.Objects;
 
 
 public class GameLogic extends AppCompatActivity
@@ -54,8 +51,7 @@ public class GameLogic extends AppCompatActivity
         setContentView(R.layout.gameboard);
         
         tp1 = findViewById(R.id.tp1); tp2 = findViewById(R.id.tp2);
-        findViewById(R.id.t1).setVisibility(View.VISIBLE);
-        findViewById(R.id.t2).setVisibility(View.INVISIBLE);
+        turnVisibility(2);
 
         cells = new ImageView[] {findViewById(R.id.i0), findViewById(R.id.i1), findViewById(R.id.i2),
                 findViewById(R.id.i3), findViewById(R.id.i4), findViewById(R.id.i5),
@@ -91,8 +87,7 @@ public class GameLogic extends AppCompatActivity
                             cells[j].setImageDrawable(getDrawable(R.drawable.x));
                             grid[j] = 1;
 
-                            findViewById(R.id.t2).setVisibility(View.VISIBLE);
-                            findViewById(R.id.t1).setVisibility(View.INVISIBLE);
+                            turnVisibility(1);
                         }
 
                         else
@@ -100,8 +95,7 @@ public class GameLogic extends AppCompatActivity
                             cells[j].setImageDrawable(getDrawable(R.drawable.o));
                             grid[j] = 2;
 
-                            findViewById(R.id.t1).setVisibility(View.VISIBLE);
-                            findViewById(R.id.t2).setVisibility(View.INVISIBLE);
+                           turnVisibility(2);
                         }
 
 
@@ -155,7 +149,7 @@ public class GameLogic extends AppCompatActivity
                 cells[i].setOnTouchListener((v, event) -> {
 
                     // Only if the image/cell is touched AND it is not occupied
-                    if (event.getAction() == MotionEvent.ACTION_DOWN && grid[j] == 0 && turn)
+                    if (turn && event.getAction() == MotionEvent.ACTION_DOWN && grid[j] == 0)
                     {
                         cells[j].setImageDrawable(d);
                         grid[j] = numPlayer;
@@ -163,13 +157,12 @@ public class GameLogic extends AppCompatActivity
                         // Create a thread to control if somebody win
                         // Thread cannot be used because after calling Win it shows an alert dialog
                         runOnUiThread(() -> AlertWin(cells, grid));
-                        new Thread(() -> bReceiver.sendMsg(String.valueOf(j))).start();
+                        bReceiver.sendMsg(String.valueOf(j));
 
                         runOnUiThread(() -> turnVisibility(numPlayer));
 
                         turn = !turn;
 
-                        return true;
                     }
 
                     return false;
@@ -183,11 +176,14 @@ public class GameLogic extends AppCompatActivity
             reset(cells);
             if(getIntent().getBooleanExtra("online", false))
                 bReceiver.sendMsg("again");
-
         });
 
         // Setting click listener when return to home button is clicked
-        findViewById(R.id.home).setOnClickListener(v -> returnHome());
+        findViewById(R.id.home).setOnClickListener(v ->
+                new AlertDialog.Builder(GameLogic.this)
+                        .setMessage("Are you sure you want to leave the game?")
+                        .setNegativeButton("ok", (dialog, which) -> returnHome()).show()
+        );
 
         // Avoids the slide of the win streak seekbar by the users
         findViewById(R.id.seekBar).setOnTouchListener((v, event) -> true);
@@ -205,24 +201,28 @@ public class GameLogic extends AppCompatActivity
         });
     }
 
+
     /**
      * This receiver is used to get the messages from the bConnection thread.
      * Is used to sync the game:
      * EX. when a player receives a number n it means the other one finished the turn.
      *     His/Her move will be the one in the n position.
      */
-    BroadcastReceiver getMsg = new BroadcastReceiver() {
+    private final BroadcastReceiver getMsg = new BroadcastReceiver() {
         @SuppressLint("UseCompatLoadingForDrawables")
         @Override
         public void onReceive(Context context, Intent intent)
         {
+
             String msg = intent.getStringExtra("msg");
 
-            // If the message is null or it doesn't contain text it will do nothing
-            if(msg == null) return;
+            assert msg != null;
+
+            if(msg.contains("start") && msg.length()>5)
+                msg = msg.replaceAll("start", "");
 
             // If the message is disconnect it means the other device is disconnected
-            else if(msg.equals("disconnect")) returnHome();
+            if(msg.equals("disconnect")) returnHome();
 
             // The number means that the other device finished the turn so an UI update should be performed
             else if(msg.matches("^(\\d)+$"))
@@ -246,18 +246,16 @@ public class GameLogic extends AppCompatActivity
             }
 
             // If the message is start then the two devices should send their player's name
-            else if(msg.matches("^start$"))
+            else if(msg.equals("start"))
             {
-                String tmp = "playerName" + numPlayer;
-                Log.d("WRITE", tmp);
-                bReceiver.sendMsg(Objects.requireNonNull(getIntent().getStringExtra(tmp)));
+                if(numPlayer == 1) bReceiver.sendMsg(tp1.getText().toString());
+                else bReceiver.sendMsg(tp2.getText().toString());
             }
 
             // The 'default' option should be when the message is the player's name
             else
             {
-                if(msg.contains("start") && msg.length()>5)
-                    msg = msg.replaceAll("^start$", "");
+
 
                 if(numPlayer==1)
                 {
@@ -303,8 +301,7 @@ public class GameLogic extends AppCompatActivity
         if(!getIntent().getBooleanExtra("online", false)) turn = true;
         else turn = (numPlayer==1);
 
-        findViewById(R.id.t1).setVisibility(View.VISIBLE);
-        findViewById(R.id.t2).setVisibility(View.INVISIBLE);
+        turnVisibility(2);
 
         for (int i = 0; i < 9; i++)
         {

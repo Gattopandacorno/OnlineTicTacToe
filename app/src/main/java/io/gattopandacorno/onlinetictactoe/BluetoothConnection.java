@@ -27,15 +27,14 @@ public class BluetoothConnection
     // Apparently createRfcomm can be successful only if this is static
     // This is why i can't use the room code like my first idea was
     private static final UUID uuid = UUID.nameUUIDFromBytes("TRISONLINE".getBytes());
-
     private final BluetoothAdapter bAdapter;
     private final Context ctx;
-
     private AcceptThread acceptThr;
-
     private ConnectThread connectThr;
     private BluetoothDevice dev;
     private ConnectedThread connectedThr;
+
+    private BluetoothSocket bSocket;
 
     /**
      * The contractor requires the context due to the retrieving of BluetoothAdapter.
@@ -76,7 +75,11 @@ public class BluetoothConnection
 
                 Log.d(TAG, "Setting up Server using: " + uuid);
             }
-            catch (IOException e){Log.e(TAG, "AcceptThread: " + e );}
+
+            catch (IOException e)
+            {
+                Log.e(TAG, "AcceptThread: " + e );
+            }
 
             bServer = tmp;
         }
@@ -100,6 +103,7 @@ public class BluetoothConnection
                 Log.d(TAG, "RFCOMM server socket accepted connection.");
 
             }
+
             catch (IOException e)
             {
                 Log.e(TAG, "AcceptThread: " + e.getMessage() );
@@ -110,9 +114,10 @@ public class BluetoothConnection
             {
                 // we close the listening server because we only have two players (one server and one client)
                 cancel();
-                connected(bSocket, dev);
+
+                setBsocket(bSocket);
+                connected(bSocket);
             }
-            // TODO: else you should return to home screen
         }
 
         /**
@@ -125,7 +130,10 @@ public class BluetoothConnection
         {
             Log.d(TAG, "cancel: Canceling AcceptThread.");
             try {bServer.close();}
-            catch (IOException e) {Log.e(TAG, "Close of server failed. " + e);}
+            catch (IOException e)
+            {
+                Log.e(TAG, "Close of server failed. " + e);
+            }
         }
     }
 
@@ -170,7 +178,10 @@ public class BluetoothConnection
                 Log.d(TAG, "Trying to create InsecureRfcommSocket using: " + uuid);
                 tmp = dev.createRfcommSocketToServiceRecord(uuid);
             }
-            catch (IOException e) {Log.e(TAG, "Could not create InsecureRfcommSocket " + e);}
+            catch (IOException e)
+            {
+                Log.e(TAG, "Could not create InsecureRfcommSocket " + e);
+            }
 
             mmSocket = tmp;
 
@@ -189,11 +200,16 @@ public class BluetoothConnection
             {
                 // Close the socket if there is a problem
                 cancel();
+
                 Log.d(TAG, "ConnectThread could not connect to UUID: " + uuid);
                 // TODO: go to home screen
             }
 
-            connected(mmSocket, dev);
+            if(mmSocket != null)
+            {
+                setBsocket(mmSocket);
+                connected(mmSocket);
+            }
         }
 
         /**
@@ -205,7 +221,11 @@ public class BluetoothConnection
                 Log.d(TAG, "Closing Client Socket.");
                 mmSocket.close();
             }
-            catch (IOException e) {Log.e(TAG, " close of Socket in Connectthread failed. " + e);}
+
+            catch (IOException e)
+            {
+                Log.e(TAG, " close of Socket in Connectthread failed. " + e);
+            }
         }
     }
 
@@ -274,7 +294,11 @@ public class BluetoothConnection
                 tmpIn = this.socket.getInputStream();
                 tmpOut = this.socket.getOutputStream();
             }
-            catch (IOException e) {Log.d(TAG,"retrieve streams " + e);}
+
+            catch (IOException e)
+            {
+                Log.d(TAG,"retrieve streams " + e);
+            }
 
             IStream = tmpIn;
             OStream = tmpOut;
@@ -327,18 +351,24 @@ public class BluetoothConnection
             String text = new String(bytes, Charset.defaultCharset());
             Log.d(TAG, "Writing to output: " + text);
             try {if(bytes != null) OStream.write(bytes);}
-            catch (IOException e) {Log.e(TAG, "Error writing to output. " + e.getMessage() );}
+            catch (IOException e)
+            {
+                Log.e(TAG, "Error writing to output. " + e.getMessage() );
+            }
         }
 
         /* Call this from the main activity to shutdown the connection */
         public void cancel()
         {
             try {socket.close();}
-            catch (IOException e) { Log.d("SOCKET", "error closing the socket " + e);}
+            catch (IOException e)
+            {
+                Log.d("SOCKET", "error closing the socket " + e);
+            }
         }
     }
 
-    private void connected(BluetoothSocket mmSocket, BluetoothDevice mmDevice)
+    private void connected(BluetoothSocket bSocket)
     {
         Log.d(TAG, "connected: Starting.");
 
@@ -346,7 +376,7 @@ public class BluetoothConnection
         Progress.dismissDialog();
 
         // Start the thread to manage the connection and perform transmissions
-        connectedThr = new ConnectedThread(mmSocket, this.ctx);
+        connectedThr = new ConnectedThread(bSocket, this.ctx);
         connectedThr.start();
     }
 
@@ -361,6 +391,7 @@ public class BluetoothConnection
         // Synchronize a copy of the ConnectedThread
         Log.d(TAG, "write: Write Called.");
 
+        if(connectedThr!= null) connected(this.bSocket);
         if(out != null) connectedThr.write(out);
     }
 
@@ -380,5 +411,15 @@ public class BluetoothConnection
     public BluetoothAdapter getAdapter()
     {
         return bAdapter;
+    }
+
+    private void setBsocket(BluetoothSocket bsocket)
+    {
+        this.bSocket = bsocket;
+    }
+
+    private BluetoothSocket getBsocket()
+    {
+        return this.bSocket;
     }
 }

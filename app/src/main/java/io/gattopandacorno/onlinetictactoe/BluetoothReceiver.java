@@ -7,6 +7,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
+import android.widget.Toast;
+
 import java.util.Objects;
 
 public class BluetoothReceiver extends BroadcastReceiver
@@ -51,6 +53,9 @@ public class BluetoothReceiver extends BroadcastReceiver
 
                 switch(intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, 10))
                 {
+                    // TODO: why bluetooth is detected off for joining device?
+                    // Can't place alertDialog here because the app crashes
+
                     case BluetoothAdapter.STATE_OFF:
                         Log.d("SOCKET", "STATE OFF");
                         break;
@@ -79,7 +84,7 @@ public class BluetoothReceiver extends BroadcastReceiver
 
                     //Device not in discoverable mode
                     case BluetoothAdapter.SCAN_MODE_CONNECTABLE:
-                        Log.d("SOCKET", "Discoverability Disabled. Able to receive connections.");
+                        Log.d("SOCKET", "Discoverability Enabled. Able to receive connections.");
                         break;
 
                     case BluetoothAdapter.SCAN_MODE_NONE:
