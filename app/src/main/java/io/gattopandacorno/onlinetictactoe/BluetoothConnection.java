@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.Objects;
 import java.util.UUID;
 
 // This class is highly inspired by @mitchtabian on github and youtube, please check all his tutorial!
@@ -392,7 +393,7 @@ public class BluetoothConnection
         Log.d(TAG, "write: Write Called.");
 
         if(connectedThr!= null) connected(this.bSocket);
-        if(out != null) connectedThr.write(out);
+        if(out != null) Objects.requireNonNull(connectedThr).write(out);
     }
 
     public void disconnect()
@@ -413,13 +414,15 @@ public class BluetoothConnection
         return bAdapter;
     }
 
+    /**
+     * Method to set bluetooth socket.
+     * This is used to call connected() when bConnectedThread is null and can cause nullPointerException.
+     *
+     * @param bsocket The connection between the two devices.
+     */
     private void setBsocket(BluetoothSocket bsocket)
     {
         this.bSocket = bsocket;
     }
 
-    private BluetoothSocket getBsocket()
-    {
-        return this.bSocket;
-    }
 }
