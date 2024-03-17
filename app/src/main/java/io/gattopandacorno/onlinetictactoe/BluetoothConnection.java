@@ -68,7 +68,7 @@ public class BluetoothConnection
             BluetoothServerSocket tmp = null;
 
             // ProgressDialog is deprecated so i searched a workaround using a simple ProgressBar
-            Progress.showDialog(ctx, "Waiting connection...");
+            Progress.showDialog(ctx);
 
             // Create a new listening server socket
             try{
@@ -203,7 +203,6 @@ public class BluetoothConnection
                 cancel();
 
                 Log.d(TAG, "ConnectThread could not connect to UUID: " + uuid);
-                // TODO: go to home screen
             }
 
             if(mmSocket != null)

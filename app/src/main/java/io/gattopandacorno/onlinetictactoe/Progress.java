@@ -1,12 +1,7 @@
 package io.gattopandacorno.onlinetictactoe;
 
 import android.content.Context;
-import android.graphics.Color;
-import android.view.Gravity;
-import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 
@@ -22,9 +17,8 @@ public class Progress
      * It will show the indeterminate progress with the given message.
      *
      * @param ctx This is the application context.
-     * @param msg This is the String to display while waiting the progress to finish.
      */
-    public static void showDialog(Context ctx, String msg)
+    public static void showDialog(Context ctx)
     {
         if(dialog == null)
         {
