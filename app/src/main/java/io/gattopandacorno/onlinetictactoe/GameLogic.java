@@ -22,6 +22,8 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import java.util.Objects;
+
 
 public class GameLogic extends AppCompatActivity
 {
@@ -370,10 +372,12 @@ public class GameLogic extends AppCompatActivity
             bReceiver.disableBluetooth();
         }
 
+        // This restarts the app to the main activity, it is used to make online game not crash
         PackageManager packageManager = this.getPackageManager();
         Intent i = packageManager.getLaunchIntentForPackage(this.getPackageName());
-        ComponentName componentName = i.getComponent();
+        ComponentName componentName = Objects.requireNonNull(i).getComponent();
         Intent mainIntent = Intent.makeRestartActivityTask(componentName);
+
         // Required for API 34 and later
         // Ref: https://developer.android.com/about/versions/14/behavior-changes-14#safer-intents
         mainIntent.setPackage(this.getPackageName());
