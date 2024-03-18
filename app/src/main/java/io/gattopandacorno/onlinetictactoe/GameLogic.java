@@ -5,11 +5,14 @@ import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
@@ -39,6 +42,7 @@ public class GameLogic extends AppCompatActivity
     private BluetoothReceiver bReceiver;
     private AlertDialog ad;
     private TextView tp1, tp2;
+    private Drawable d;
 
 
     // The permission check is ignored because if location or bluetooth is not enabled and permitted
@@ -117,7 +121,7 @@ public class GameLogic extends AppCompatActivity
         {
             tp1.setText(getIntent().getStringExtra("playerName1"));
             tp2.setText(getIntent().getStringExtra("playerName2"));
-            Drawable d;
+
             LocalBroadcastManager.getInstance(this).registerReceiver(getMsg , new IntentFilter("sendmsg"));
 
             // Ask if the device can be discoverable so it can be found and then paired/connected with the other player
@@ -157,7 +161,7 @@ public class GameLogic extends AppCompatActivity
                         // Create a thread to control if somebody win
                         // Thread cannot be used because after calling Win it shows an alert dialog
                         runOnUiThread(() -> AlertWin(cells, grid));
-                        bReceiver.sendMsg(String.valueOf(j));
+                        new Thread(() -> bReceiver.sendMsg(String.valueOf(j))).start();
 
                         runOnUiThread(() -> turnVisibility(numPlayer));
 
@@ -209,7 +213,7 @@ public class GameLogic extends AppCompatActivity
      *     His/Her move will be the one in the n position.
      */
     private final BroadcastReceiver getMsg = new BroadcastReceiver() {
-        @SuppressLint("UseCompatLoadingForDrawables")
+        @SuppressLint({"UseCompatLoadingForDrawables", "ClickableViewAccessibility"})
         @Override
         public void onReceive(Context context, Intent intent)
         {
@@ -248,15 +252,13 @@ public class GameLogic extends AppCompatActivity
             // If the message is start then the two devices should send their player's name
             else if(msg.equals("start"))
             {
-                if(numPlayer == 1) bReceiver.sendMsg(tp1.getText().toString());
-                else bReceiver.sendMsg(tp2.getText().toString());
+                if(numPlayer == 1) new Thread(() -> bReceiver.sendMsg(tp1.getText().toString())).start();
+                else new Thread(() -> bReceiver.sendMsg(tp2.getText().toString())).start();
             }
 
             // The 'default' option should be when the message is the player's name
             else
             {
-
-
                 if(numPlayer==1)
                 {
                     tp2.setText(msg);
@@ -354,12 +356,12 @@ public class GameLogic extends AppCompatActivity
 
     }
 
-    @SuppressLint("MissingPermission")
-    @Override
-    protected void onDestroy()
+    /**
+     * This method was created to not repeat the same code for the home button and the back pressed.
+     * As the name suggest start the activity to return in the Home view (MainActivity).
+     */
+    private void returnHome()
     {
-        super.onDestroy();
-
         // If the game is online we have to disconnect the devices and to unregister the receiver
         if(getIntent().getBooleanExtra("online", false))
         {
@@ -368,19 +370,16 @@ public class GameLogic extends AppCompatActivity
             LocalBroadcastManager.getInstance(this).unregisterReceiver(getMsg);
             bReceiver.disableBluetooth();
         }
-    }
 
-    /**
-     * This method was created to not repeat the same code for the home button and the back pressed.
-     * As the name suggest start the activity to return in the Home view (MainActivity).
-     */
-    private void returnHome()
-    {
-        Intent i = new Intent(this, MainActivity.class);
-
-        startActivity(i); //Return to home view
-
-        finish();
+        PackageManager packageManager = this.getPackageManager();
+        Intent i = packageManager.getLaunchIntentForPackage(this.getPackageName());
+        ComponentName componentName = i.getComponent();
+        Intent mainIntent = Intent.makeRestartActivityTask(componentName);
+        // Required for API 34 and later
+        // Ref: https://developer.android.com/about/versions/14/behavior-changes-14#safer-intents
+        mainIntent.setPackage(this.getPackageName());
+        this.startActivity(mainIntent);
+        Runtime.getRuntime().exit(0);
     }
 
 

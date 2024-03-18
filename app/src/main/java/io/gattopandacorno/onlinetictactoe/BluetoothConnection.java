@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.Objects;
 import java.util.UUID;
 
 // This class is highly inspired by @mitchtabian on github and youtube, please check all his tutorial!
@@ -34,8 +33,7 @@ public class BluetoothConnection
     private ConnectThread connectThr;
     private BluetoothDevice dev;
     private ConnectedThread connectedThr;
-
-    private BluetoothSocket bSocket;
+    public BluetoothSocket bSocket;
 
     /**
      * The contractor requires the context due to the retrieving of BluetoothAdapter.
@@ -46,6 +44,7 @@ public class BluetoothConnection
     public BluetoothConnection(Context ctx)
     {
         this.ctx = ctx;
+
         bAdapter = ((BluetoothManager) ctx.getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
     }
 
@@ -115,6 +114,8 @@ public class BluetoothConnection
             {
                 // we close the listening server because we only have two players (one server and one client)
                 cancel();
+
+                Log.v(TAG, "Setting bsocket with bsocket " + bSocket);
 
                 setBsocket(bSocket);
                 connected(bSocket);
@@ -207,6 +208,7 @@ public class BluetoothConnection
 
             if(mmSocket != null)
             {
+                Log.v(TAG, "Setting bsocket with mmsocket " + mmSocket.toString());
                 setBsocket(mmSocket);
                 connected(mmSocket);
             }
@@ -330,11 +332,16 @@ public class BluetoothConnection
             {
                 // Read from input
                 try {
-                    bytes = IStream.read(buffer);
-                    String msg = new String(buffer, 0, bytes);
 
-                    i.putExtra("msg", msg);
-                    LocalBroadcastManager.getInstance(this.ctx).sendBroadcast(i);
+                    if(IStream!=null && IStream.available() > 0)
+                    {
+                        // Read from the InputStream
+                        bytes = IStream.read(buffer);
+                        String msg = new String(buffer, 0, bytes);
+
+                        i.putExtra("msg", msg);
+                        LocalBroadcastManager.getInstance(this.ctx).sendBroadcast(i);
+                    }
                 }
 
                 catch (IOException e)
@@ -360,7 +367,11 @@ public class BluetoothConnection
         /* Call this from the main activity to shutdown the connection */
         public void cancel()
         {
-            try {socket.close();}
+            try {
+                socket.close();
+                IStream.close();
+                OStream.close();
+            }
             catch (IOException e)
             {
                 Log.d("SOCKET", "error closing the socket " + e);
@@ -391,8 +402,8 @@ public class BluetoothConnection
         // Synchronize a copy of the ConnectedThread
         Log.d(TAG, "write: Write Called.");
 
-        if(connectedThr!= null) connected(this.bSocket);
-        if(out != null) Objects.requireNonNull(connectedThr).write(out);
+        if(connectedThr == null) connected(this.bSocket);
+        if(out != null) connectedThr.write(out);
     }
 
     public void disconnect()
@@ -400,6 +411,14 @@ public class BluetoothConnection
         // It notify the disconnection only if the other device is connected
         if(connectedThr.socket.isConnected()) write("disconnect".getBytes());
         connectedThr.cancel();
+        connectedThr = null;
+        try {
+            this.bSocket.close();
+            this.bSocket = null;
+        }
+        catch (IOException e) {Log.e(TAG, "Error closing socket " + e);}
+
+
     }
 
     /**
@@ -421,6 +440,7 @@ public class BluetoothConnection
      */
     private void setBsocket(BluetoothSocket bsocket)
     {
+        Log.v(TAG, "Setting bsocket to " + bsocket.toString());
         this.bSocket = bsocket;
     }
 

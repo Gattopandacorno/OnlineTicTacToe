@@ -3,6 +3,7 @@ package io.gattopandacorno.onlinetictactoe;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -45,7 +46,7 @@ public class BluetoothReceiver extends BroadcastReceiver
                 // Discovery has found a device
                 BluetoothDevice tmp = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
-                if(tmp != null && tmp.getName()!=null && tmp.getName().equals("HT"))
+                if(tmp!=null && tmp.getName()!=null && tmp.getName().equals("HT"))
                     bConnection.startClient(tmp);
 
             case BluetoothAdapter.ACTION_STATE_CHANGED:
@@ -160,5 +161,10 @@ public class BluetoothReceiver extends BroadcastReceiver
     public void disableBluetooth()
     {
         bConnection.getAdapter().disable();
+    }
+
+    public BluetoothSocket getSocket()
+    {
+        return bConnection.bSocket;
     }
 }
