@@ -208,7 +208,7 @@ public class BluetoothConnection
 
             if(mmSocket != null)
             {
-                Log.v(TAG, "Setting bsocket with mmsocket " + mmSocket.toString());
+                Log.v(TAG, "Setting bsocket with mmsocket " + mmSocket);
                 setBsocket(mmSocket);
                 connected(mmSocket);
             }

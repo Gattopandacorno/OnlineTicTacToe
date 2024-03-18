@@ -163,8 +163,4 @@ public class BluetoothReceiver extends BroadcastReceiver
         bConnection.getAdapter().disable();
     }
 
-    public BluetoothSocket getSocket()
-    {
-        return bConnection.bSocket;
-    }
 }
